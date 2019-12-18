@@ -1,7 +1,7 @@
 {
   "name": "@spinajs/log",
-  "version": "1.0.1",
-  "description": "Loggin lib for all spinejs related libs",
+  "version": "1.0.2",
+  "description": "Log lib for all spinejs related libs",
   "main": "lib/index.js",
   "private": false,
   "scripts": {

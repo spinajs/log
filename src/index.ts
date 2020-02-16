@@ -67,7 +67,7 @@ export class ConsoleLogStream extends Writable {
         
         const type = this._getNameFromType(chunk.level);
         const err = chunk.err ? `Exception: ${chunk.err.name}, ${chunk.err.message}, ${chunk.err.stack}` : "";
-        const message = `${chunk.tme.toISOString()} ${type} ${chunk.name}: ${chunk.msg} (module=${chunk.module}) ${err}`;
+        const message = `${chunk.time.toISOString()} ${type} ${chunk.name}: ${chunk.msg} (module=${chunk.module}) ${err}`;
         let c = null;
 
         switch (chunk.level) {

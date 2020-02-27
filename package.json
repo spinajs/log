@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/spinajs/log#readme",
   "dependencies": {
-    "@spinajs/configuration": "^1.0.4",
+    "@spinajs/configuration": "^1.0.5",
     "@spinajs/di": "^1.0.3",
     "@spinajs/exceptions": "^1.0.0",
     "bunyan": "^1.8.12",

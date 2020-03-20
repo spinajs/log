@@ -8,7 +8,7 @@ import chalk from 'chalk';
 import { Writable } from 'stream';
 
 import { Configuration } from '@spinajs/configuration';
-import { Autoinject, DI, Injectable, ResolveStrategy } from '@spinajs/di';
+import { Autoinject, DI, Injectable, SyncModule } from '@spinajs/di';
 
 /**
  * -----------------------------------------------------------------------------------
@@ -357,7 +357,7 @@ export interface Log {
 /**
  * Abstract class to implement for framework log module.
  */
-export abstract class LogModule extends ResolveStrategy {
+export abstract class LogModule extends SyncModule {
     public abstract getLogger(options?: any[]): Log;
 }
 

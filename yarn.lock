@@ -89,29 +89,28 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@spinajs/configuration@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@spinajs/configuration/-/configuration-1.0.0.tgz#d02f8b62593067abd8c831edc77a81f132a9d183"
-  integrity sha512-LV+ifCp3ZB8gs7tiQqzfLC5Hegc+yZtwwPBzk7X+e07J6ZyCBjrT4FLHRcQcSoDVNTkhyei1R+YY+B5xQk/lpA==
+"@spinajs/configuration@^1.0.9":
+  version "1.0.10"
+  resolved "https://registry.yarnpkg.com/@spinajs/configuration/-/configuration-1.0.10.tgz#36de757df75b943ecd1f829b7ef504cab76e7370"
+  integrity sha512-3w5LiqcKViRyG21IAfgF5zUyOE9AserL0OyyZOusicaEBMTqTkS8C6X1KVf6vaP2/yqIMRj3OO/eHDANTwiOqw==
   dependencies:
-    "@spinajs/di" "^1.0.2"
-    commander "^2.20.0"
+    "@spinajs/di" "^1.0.16"
     glob "^7.1.4"
     lodash "^4.17.14"
 
-"@spinajs/di@^1.0.2", "@spinajs/di@^1.0.3":
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@spinajs/di/-/di-1.0.5.tgz#904ebfdbcf38cf3e7ea36bd603a6a6c755ce091c"
-  integrity sha512-VdlrrOk2r1bguMKYrnfsZfc8KMNNcbiMMA58Q1yEE0OVoTzDMphW/PTAn2v+t+CVGxode0tKAN3jkcVmko9LSA==
+"@spinajs/di@^1.0.16":
+  version "1.0.17"
+  resolved "https://registry.yarnpkg.com/@spinajs/di/-/di-1.0.17.tgz#6d8dc9afadb1e0f8184aa5f0c42054ee5f7b7b1a"
+  integrity sha512-/KPAPuWg8okxRHL5S8Yw88PAK4DLr4yXGKJ/CXMTONc6TbdZLdFkgosKHO1akZHHZPOzeLeas/34RfGh4+j3sA==
   dependencies:
-    "@spinajs/exceptions" "^1.0.0"
+    "@spinajs/exceptions" "^1.0.3"
     lodash "^4.17.14"
     reflect-metadata "^0.1.13"
 
-"@spinajs/exceptions@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@spinajs/exceptions/-/exceptions-1.0.0.tgz#9e7c58bcd36658188339216c7434860f59fcd0c8"
-  integrity sha512-C82FK/mXpqI7xSRD3jgTMLoXVtoc1YT8MXLMl8/MDnuOH5GsEARgJCpww8jR2lEWNXdrX4ZuvQ3XL1UYq7XWlQ==
+"@spinajs/exceptions@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@spinajs/exceptions/-/exceptions-1.0.3.tgz#abfbcb634d2a6d61a38abfc1424008ef8643291e"
+  integrity sha512-1T+NNGEkz/gSQ/I175pRTdan892C7yp6TEzrfologs2lvmCqo3A0oKnpmUexLsVZ6fcKJMUltgEzdwuPAiZn6w==
 
 "@types/bunyan@^1.8.6":
   version "1.8.6"
@@ -416,7 +415,7 @@ color-name@~1.1.4:
   resolved "https://registry.yarnpkg.com/color-name/-/color-name-1.1.4.tgz#c2a09a87acbde69543de6f63fa3995c826c536a2"
   integrity sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==
 
-commander@^2.12.1, commander@^2.20.0, commander@~2.20.3:
+commander@^2.12.1, commander@~2.20.3:
   version "2.20.3"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.3.tgz#fd485e84c03eb4881c20722ba48035e8531aeb33"
   integrity sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==

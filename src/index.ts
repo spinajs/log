@@ -2,13 +2,12 @@
 // tslint:disable: interface-name
 // tslint:disable: unified-signatures
 
+import * as bunyan from "bunyan";
+import chalk from "chalk";
+import { Writable } from "stream";
 
-import * as bunyan from 'bunyan';
-import chalk from 'chalk';
-import { Writable } from 'stream';
-
-import { Configuration } from '@spinajs/configuration';
-import { Autoinject, DI, Injectable, SyncModule } from '@spinajs/di';
+import { Configuration } from "@spinajs/configuration";
+import { Autoinject, DI, Injectable, SyncModule } from "@spinajs/di";
 
 /**
  * -----------------------------------------------------------------------------------
@@ -25,25 +24,25 @@ import { Autoinject, DI, Injectable, SyncModule } from '@spinajs/di';
  * @param options  - additional logger options
  */
 export function Logger(options?: any) {
-    return (target?: any, key?: string): any => {
-        let logger: Log;
+  return (target?: any, key?: string): any => {
+    let logger: Log;
 
-        // property getter
-        const getter = () => {
-            if (!logger) {
-                logger = DI.get<LogModule>('LogModule').getLogger(options);
-            }
+    // property getter
+    const getter = () => {
+      if (!logger) {
+        logger = DI.get<LogModule>("LogModule").getLogger(options);
+      }
 
-            return logger;
-        };
-
-        // Create new property with getter and setter
-        Object.defineProperty(target, key, {
-            get: getter,
-            enumerable: false,
-            configurable: false,
-        });
+      return logger;
     };
+
+    // Create new property with getter and setter
+    Object.defineProperty(target, key, {
+      get: getter,
+      enumerable: false,
+      configurable: false
+    });
+  };
 }
 
 /**
@@ -56,62 +55,65 @@ export function Logger(options?: any) {
  * * FATAL - red on white background
  */
 export class ConsoleLogStream extends Writable {
-    private TRACE = 10;
-    private DEBUG = 20;
-    private INFO = 30;
-    private WARN = 40;
-    private ERROR = 50;
-    private FATAL = 60;
+  private TRACE = 10;
+  private DEBUG = 20;
+  private INFO = 30;
+  private WARN = 40;
+  private ERROR = 50;
+  private FATAL = 60;
 
-    public write(chunk: any): boolean {
-        
-        const type = this._getNameFromType(chunk.level);
-        const err = chunk.err ? `Exception: ${chunk.err.name}, ${chunk.err.message}, ${chunk.err.stack}` : "";
-        const message = `${chunk.time.toISOString()} ${type} ${chunk.name}: ${chunk.msg} (module=${chunk.module}) ${err}`;
-        let c = null;
+  public write(chunk: any): boolean {
+    const type = this._getNameFromType(chunk.level);
+    const err = chunk.err
+      ? `Exception: ${chunk.err.name}, ${chunk.err.message}, ${chunk.err.stack}`
+      : "";
+    const message = `${chunk.time.toISOString()} ${type} ${chunk.name}: ${
+      chunk.msg
+    } (module=${chunk.module}) ${err}`;
+    let c = null;
 
-        switch (chunk.level) {
-            case this.TRACE:
-                c = chalk.gray(message);
-                break;
-            case this.DEBUG:
-                c = chalk.white(message);
-                break;
-            case this.INFO:
-                c = chalk.cyan(message);
-                break;
-            case this.WARN:
-                c = chalk.yellow(message);
-                break;
-            case this.ERROR:
-                c = chalk.red(message);
-                break;
-            case this.FATAL:
-                c = chalk.bgRed.white(message);
-                break;
-        }
-
-        console.log(c);
-
-        return true;
+    switch (chunk.level) {
+      case this.TRACE:
+        c = chalk.gray(message);
+        break;
+      case this.DEBUG:
+        c = chalk.white(message);
+        break;
+      case this.INFO:
+        c = chalk.cyan(message);
+        break;
+      case this.WARN:
+        c = chalk.yellow(message);
+        break;
+      case this.ERROR:
+        c = chalk.red(message);
+        break;
+      case this.FATAL:
+        c = chalk.bgRed.white(message);
+        break;
     }
 
-    private _getNameFromType(type: number) {
-        switch (type) {
-            case this.TRACE:
-                return 'TRACE';
-            case this.DEBUG:
-                return 'DEBUG';
-            case this.INFO:
-                return 'INFO';
-            case this.WARN:
-                return 'WARN';
-            case this.ERROR:
-                return 'ERROR';
-            case this.FATAL:
-                return 'FATAL';
-        }
+    console.log(c);
+
+    return true;
+  }
+
+  private _getNameFromType(type: number) {
+    switch (type) {
+      case this.TRACE:
+        return "TRACE";
+      case this.DEBUG:
+        return "DEBUG";
+      case this.INFO:
+        return "INFO";
+      case this.WARN:
+        return "WARN";
+      case this.ERROR:
+        return "ERROR";
+      case this.FATAL:
+        return "FATAL";
     }
+  }
 }
 
 /**
@@ -119,35 +121,35 @@ export class ConsoleLogStream extends Writable {
  * Used to add some abstraction and allow implement own logging system
  */
 
-type LogLevelString = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+type LogLevelString = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
 type LogLevel = LogLevelString | number;
 
 type Serializer = (input: any) => any;
 
 interface Serializers {
-    [key: string]: Serializer;
+  [key: string]: Serializer;
 }
 
 interface Stream {
-    type?: string;
-    level?: LogLevel;
-    path?: string;
-    stream?: NodeJS.WritableStream | Stream;
-    closeOnExit?: boolean;
-    period?: string;
-    count?: number;
-    name?: string;
-    reemitErrorEvents?: boolean;
+  type?: string;
+  level?: LogLevel;
+  path?: string;
+  stream?: NodeJS.WritableStream | Stream;
+  closeOnExit?: boolean;
+  period?: string;
+  count?: number;
+  name?: string;
+  reemitErrorEvents?: boolean;
 }
 
 interface LoggerOptions {
-    name: string;
-    streams?: Stream[];
-    level?: LogLevel;
-    stream?: NodeJS.WritableStream;
-    serializers?: Serializers;
-    src?: boolean;
-    [custom: string]: any;
+  name: string;
+  streams?: Stream[];
+  level?: LogLevel;
+  stream?: NodeJS.WritableStream;
+  serializers?: Serializers;
+  src?: boolean;
+  [custom: string]: any;
 }
 
 /**
@@ -155,210 +157,210 @@ interface LoggerOptions {
  * used as fallback if no config is provided
  */
 const DEFAULT_OPTIONS: LoggerOptions = {
-    name: 'spine-framework',
-    serializers: bunyan.stdSerializers,
-    /**
-     * streams to log to. See more on bunyan docs
-     */
-    streams: [
-        {
-            type: 'raw',
+  name: "spine-framework",
+  serializers: bunyan.stdSerializers,
+  /**
+   * streams to log to. See more on bunyan docs
+   */
+  streams: [
+    {
+      type: "raw",
 
-            /**
-             * We use default console log stream with colors
-             */
-            stream: new ConsoleLogStream(),
-            level: process.env.NODE_ENV === 'development' ? 'trace' : 'info',
-        },
-    ],
+      /**
+       * We use default console log stream with colors
+       */
+      stream: new ConsoleLogStream(),
+      level: process.env.NODE_ENV === "development" ? "trace" : "info"
+    }
+  ]
 };
 
 /**
  * Default log implementation interface. Taken from bunyan. Feel free to implement own.
  */
 export interface Log {
-    /**
-     * Returns a boolean: is the `trace` level enabled?
-     *
-     * This is equivalent to `log.isTraceEnabled()` or `log.isEnabledFor(TRACE)` in log4j.
-     */
-    trace(): boolean;
+  /**
+   * Returns a boolean: is the `trace` level enabled?
+   *
+   * This is equivalent to `log.isTraceEnabled()` or `log.isEnabledFor(TRACE)` in log4j.
+   */
+  trace(): boolean;
 
-    /**
-     * Special case to log an `Error` instance to the record.
-     * This adds an `err` field with exception details
-     * (including the stack) and sets `msg` to the exception
-     * message or you can specify the `msg`.
-     */
-    trace(error: Error, ...params: any[]): void;
+  /**
+   * Special case to log an `Error` instance to the record.
+   * This adds an `err` field with exception details
+   * (including the stack) and sets `msg` to the exception
+   * message or you can specify the `msg`.
+   */
+  trace(error: Error, ...params: any[]): void;
 
-    /**
-     * The first field can optionally be a "fields" object, which
-     * is merged into the log record.
-     *
-     * To pass in an Error *and* other fields, use the `err`
-     * field name for the Error instance.
-     */
-    trace(obj: Object, ...params: any[]): void;
+  /**
+   * The first field can optionally be a "fields" object, which
+   * is merged into the log record.
+   *
+   * To pass in an Error *and* other fields, use the `err`
+   * field name for the Error instance.
+   */
+  trace(obj: Object, ...params: any[]): void;
 
-    /**
-     * Uses `util.format` for msg formatting.
-     */
-    trace(format: any, ...params: any[]): void;
+  /**
+   * Uses `util.format` for msg formatting.
+   */
+  trace(format: any, ...params: any[]): void;
 
-    /**
-     * Returns a boolean: is the `debug` level enabled?
-     *
-     * This is equivalent to `log.isDebugEnabled()` or `log.isEnabledFor(DEBUG)` in log4j.
-     */
-    debug(): boolean;
+  /**
+   * Returns a boolean: is the `debug` level enabled?
+   *
+   * This is equivalent to `log.isDebugEnabled()` or `log.isEnabledFor(DEBUG)` in log4j.
+   */
+  debug(): boolean;
 
-    /**
-     * Special case to log an `Error` instance to the record.
-     * This adds an `err` field with exception details
-     * (including the stack) and sets `msg` to the exception
-     * message or you can specify the `msg`.
-     */
-    debug(error: Error, ...params: any[]): void;
+  /**
+   * Special case to log an `Error` instance to the record.
+   * This adds an `err` field with exception details
+   * (including the stack) and sets `msg` to the exception
+   * message or you can specify the `msg`.
+   */
+  debug(error: Error, ...params: any[]): void;
 
-    /**
-     * The first field can optionally be a "fields" object, which
-     * is merged into the log record.
-     *
-     * To pass in an Error *and* other fields, use the `err`
-     * field name for the Error instance.
-     */
-    debug(obj: Object, ...params: any[]): void;
+  /**
+   * The first field can optionally be a "fields" object, which
+   * is merged into the log record.
+   *
+   * To pass in an Error *and* other fields, use the `err`
+   * field name for the Error instance.
+   */
+  debug(obj: Object, ...params: any[]): void;
 
-    /**
-     * Uses `util.format` for msg formatting.
-     */
-    debug(format: any, ...params: any[]): void;
+  /**
+   * Uses `util.format` for msg formatting.
+   */
+  debug(format: any, ...params: any[]): void;
 
-    /**
-     * Returns a boolean: is the `info` level enabled?
-     *
-     * This is equivalent to `log.isInfoEnabled()` or `log.isEnabledFor(INFO)` in log4j.
-     */
-    info(): boolean;
+  /**
+   * Returns a boolean: is the `info` level enabled?
+   *
+   * This is equivalent to `log.isInfoEnabled()` or `log.isEnabledFor(INFO)` in log4j.
+   */
+  info(): boolean;
 
-    /**
-     * Special case to log an `Error` instance to the record.
-     * This adds an `err` field with exception details
-     * (including the stack) and sets `msg` to the exception
-     * message or you can specify the `msg`.
-     */
-    info(error: Error, ...params: any[]): void;
+  /**
+   * Special case to log an `Error` instance to the record.
+   * This adds an `err` field with exception details
+   * (including the stack) and sets `msg` to the exception
+   * message or you can specify the `msg`.
+   */
+  info(error: Error, ...params: any[]): void;
 
-    /**
-     * The first field can optionally be a "fields" object, which
-     * is merged into the log record.
-     *
-     * To pass in an Error *and* other fields, use the `err`
-     * field name for the Error instance.
-     */
-    info(obj: Object, ...params: any[]): void;
+  /**
+   * The first field can optionally be a "fields" object, which
+   * is merged into the log record.
+   *
+   * To pass in an Error *and* other fields, use the `err`
+   * field name for the Error instance.
+   */
+  info(obj: Object, ...params: any[]): void;
 
-    /**
-     * Uses `util.format` for msg formatting.
-     */
-    info(format: any, ...params: any[]): void;
+  /**
+   * Uses `util.format` for msg formatting.
+   */
+  info(format: any, ...params: any[]): void;
 
-    /**
-     * Returns a boolean: is the `warn` level enabled?
-     *
-     * This is equivalent to `log.isWarnEnabled()` or `log.isEnabledFor(WARN)` in log4j.
-     */
-    warn(): boolean;
+  /**
+   * Returns a boolean: is the `warn` level enabled?
+   *
+   * This is equivalent to `log.isWarnEnabled()` or `log.isEnabledFor(WARN)` in log4j.
+   */
+  warn(): boolean;
 
-    /**
-     * Special case to log an `Error` instance to the record.
-     * This adds an `err` field with exception details
-     * (including the stack) and sets `msg` to the exception
-     * message or you can specify the `msg`.
-     */
-    warn(error: Error, ...params: any[]): void;
+  /**
+   * Special case to log an `Error` instance to the record.
+   * This adds an `err` field with exception details
+   * (including the stack) and sets `msg` to the exception
+   * message or you can specify the `msg`.
+   */
+  warn(error: Error, ...params: any[]): void;
 
-    /**
-     * The first field can optionally be a "fields" object, which
-     * is merged into the log record.
-     *
-     * To pass in an Error *and* other fields, use the `err`
-     * field name for the Error instance.
-     */
-    warn(obj: Object, ...params: any[]): void;
+  /**
+   * The first field can optionally be a "fields" object, which
+   * is merged into the log record.
+   *
+   * To pass in an Error *and* other fields, use the `err`
+   * field name for the Error instance.
+   */
+  warn(obj: Object, ...params: any[]): void;
 
-    /**
-     * Uses `util.format` for msg formatting.
-     */
-    warn(format: any, ...params: any[]): void;
+  /**
+   * Uses `util.format` for msg formatting.
+   */
+  warn(format: any, ...params: any[]): void;
 
-    /**
-     * Returns a boolean: is the `error` level enabled?
-     *
-     * This is equivalent to `log.isErrorEnabled()` or `log.isEnabledFor(ERROR)` in log4j.
-     */
-    error(): boolean;
+  /**
+   * Returns a boolean: is the `error` level enabled?
+   *
+   * This is equivalent to `log.isErrorEnabled()` or `log.isEnabledFor(ERROR)` in log4j.
+   */
+  error(): boolean;
 
-    /**
-     * Special case to log an `Error` instance to the record.
-     * This adds an `err` field with exception details
-     * (including the stack) and sets `msg` to the exception
-     * message or you can specify the `msg`.
-     */
-    error(error: Error, ...params: any[]): void;
+  /**
+   * Special case to log an `Error` instance to the record.
+   * This adds an `err` field with exception details
+   * (including the stack) and sets `msg` to the exception
+   * message or you can specify the `msg`.
+   */
+  error(error: Error, ...params: any[]): void;
 
-    /**
-     * The first field can optionally be a "fields" object, which
-     * is merged into the log record.
-     *
-     * To pass in an Error *and* other fields, use the `err`
-     * field name for the Error instance.
-     */
-    error(obj: Object, ...params: any[]): void;
+  /**
+   * The first field can optionally be a "fields" object, which
+   * is merged into the log record.
+   *
+   * To pass in an Error *and* other fields, use the `err`
+   * field name for the Error instance.
+   */
+  error(obj: Object, ...params: any[]): void;
 
-    /**
-     * Uses `util.format` for msg formatting.
-     */
-    error(format: any, ...params: any[]): void;
+  /**
+   * Uses `util.format` for msg formatting.
+   */
+  error(format: any, ...params: any[]): void;
 
-    /**
-     * Returns a boolean: is the `fatal` level enabled?
-     *
-     * This is equivalent to `log.isFatalEnabled()` or `log.isEnabledFor(FATAL)` in log4j.
-     */
-    fatal(): boolean;
+  /**
+   * Returns a boolean: is the `fatal` level enabled?
+   *
+   * This is equivalent to `log.isFatalEnabled()` or `log.isEnabledFor(FATAL)` in log4j.
+   */
+  fatal(): boolean;
 
-    /**
-     * Special case to log an `Error` instance to the record.
-     * This adds an `err` field with exception details
-     * (including the stack) and sets `msg` to the exception
-     * message or you can specify the `msg`.
-     */
-    fatal(error: Error, ...params: any[]): void;
+  /**
+   * Special case to log an `Error` instance to the record.
+   * This adds an `err` field with exception details
+   * (including the stack) and sets `msg` to the exception
+   * message or you can specify the `msg`.
+   */
+  fatal(error: Error, ...params: any[]): void;
 
-    /**
-     * The first field can optionally be a "fields" object, which
-     * is merged into the log record.
-     *
-     * To pass in an Error *and* other fields, use the `err`
-     * field name for the Error instance.
-     */
-    fatal(obj: Object, ...params: any[]): void;
+  /**
+   * The first field can optionally be a "fields" object, which
+   * is merged into the log record.
+   *
+   * To pass in an Error *and* other fields, use the `err`
+   * field name for the Error instance.
+   */
+  fatal(obj: Object, ...params: any[]): void;
 
-    /**
-     * Uses `util.format` for msg formatting.
-     */
-    fatal(format: any, ...params: any[]): void;
+  /**
+   * Uses `util.format` for msg formatting.
+   */
+  fatal(format: any, ...params: any[]): void;
 
-    child(options: Object, simple?: boolean): Log;
+  child(options: Object, simple?: boolean): Log;
 }
 
 /**
  * Abstract class to implement for framework log module.
  */
 export abstract class LogModule extends SyncModule {
-    public abstract getLogger(options?: any[]): Log;
+  public abstract getLogger(options?: any[]): Log;
 }
 
 /**
@@ -366,44 +368,43 @@ export abstract class LogModule extends SyncModule {
  */
 @Injectable(LogModule)
 export class SpinaJsDefaultLog extends LogModule {
+  /**
+   * Injected Configuration object
+   */
+  @Autoinject()
+  public cfg: Configuration = null;
 
+  /**
+   * root logger
+   * @access protected
+   */
+  protected log: Log;
 
-    /**
-     * Injected Configuration object
-     */
-    @Autoinject()
-    public cfg: Configuration = null;
+  /**
+   * Name of module
+   * @access protected
+   */
+  protected name: string = "Log";
 
-    /**
-     * root logger
-     * @access protected
-     */
-    protected log: Log;
+  /**
+   * Creates child logger
+   * @param options - additional logger options eg. fields.
+   */
+  public getLogger(options?: any[]): Log {
+    return this.log.child(options);
+  }
 
-    /**
-     * Name of module
-     * @access protected
-     */
-    protected name: string = 'Log';
+  /**
+   * Initializes bunyan logger & hooks for process:uncaughtException to log fatal application events
+   */
+  public resolve() {
+    // get config
+    this.log = bunyan.createLogger(
+      this.cfg.get<LoggerOptions>(["log"], DEFAULT_OPTIONS)
+    );
 
-    /**
-     * Creates child logger
-     * @param options - additional logger options eg. fields.
-     */
-    public getLogger(options?: any[]): Log {
-        return this.log.child(options);
-    }
-
-    /**
-     * Initializes bunyan logger & hooks for process:uncaughtException to log fatal application events
-     */
-    public resolve() {
-
-        // get config
-        this.log = bunyan.createLogger(this.cfg.get<LoggerOptions>(['log'], DEFAULT_OPTIONS));
-
-        process.on('uncaughtException', (err: Error) => {
-            this.log.fatal(err);
-        });
-    }
+    process.on("uncaughtException", (err: Error) => {
+      this.log.fatal(err);
+    });
+  }
 }

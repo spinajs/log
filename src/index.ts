@@ -360,7 +360,7 @@ export interface Log {
  * Abstract class to implement for framework log module.
  */
 export abstract class LogModule extends SyncModule {
-  public abstract getLogger(options?: any[]): Log;
+  public abstract getLogger(options?: any): Log;
 }
 
 /**
@@ -390,7 +390,7 @@ export class SpinaJsDefaultLog extends LogModule {
    * Creates child logger
    * @param options - additional logger options eg. fields.
    */
-  public getLogger(options?: any[]): Log {
+  public getLogger(options?: any): Log {
     return this.log.child(options);
   }
 

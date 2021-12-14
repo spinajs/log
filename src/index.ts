@@ -7,7 +7,7 @@ import chalk from "chalk";
 import { Writable } from "stream";
 
 import { Configuration } from "@spinajs/configuration";
-import { Autoinject, DI, Injectable, SyncModule } from "@spinajs/di";
+import { Autoinject, DI, Injectable, SyncModule, IContainer } from "@spinajs/di";
 
 /**
  * -----------------------------------------------------------------------------------
@@ -361,6 +361,36 @@ export interface Log {
  */
 export abstract class LogModule extends SyncModule {
   public abstract getLogger(options?: any): Log;
+}
+
+class EmptyLogSink implements Log
+{
+  trace(..._args:  any[]): any{};
+  debug(..._args:  any[]): any{};
+  info(..._args:  any[]): any{};
+  warn(..._args:  any[]): any{};
+  error(..._args:  any[]): any{};
+  fatal(..._args:  any[]): any{};
+
+  child(_options: Object, _simple?: boolean): Log {
+    return new EmptyLogSink();
+  }
+  
+}
+
+/**
+ * Logger that do nothing. Usefull with unit testing
+ */
+export class SpinaJSEmptyLog extends LogModule
+{
+  public getLogger(_options?: any): Log {
+    return new EmptyLogSink();
+    
+  }
+  resolve(_container: IContainer): void {
+     
+  }
+  
 }
 
 /**

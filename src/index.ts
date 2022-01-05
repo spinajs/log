@@ -1,38 +1,31 @@
-// tslint:disable: ban-types
-// tslint:disable: interface-name
-// tslint:disable: unified-signatures
+import { Config } from "@spinajs/configuration";
+import { DI, NewInstance } from "@spinajs/di";
+import { LogTarget } from "./targets/LogTarget";
+import { LogLevel, LogOptions, LogRule, TargetsOption } from "./types";
 
-import * as bunyan from "bunyan";
-import chalk from "chalk";
-import { Writable } from "stream";
-
-import { Configuration } from "@spinajs/configuration";
-import { Autoinject, DI, Injectable, SyncModule, IContainer } from "@spinajs/di";
-
-/**
- * -----------------------------------------------------------------------------------
- * IMPORTANT: log subsystem is havily based on bunyan. It uses bunyan by default, all options & functions are based on
- * bunyan lib. However you can implement custom log module and inject it to framework simply by implementing
- * `LogModule` that returns custom implementation of `Log` interface. Then override default DI registered class at app bootstrap.
- *
- * If you simply want to add more places where log goes eg. database, simply add custom log stream to configuration file.
- */
 
 /**
  * Creates child logger
  *
  * @param options  - additional logger options
  */
-export function Logger(options?: any) {
+export function Logger(name: string, variables?: {}) {
   return (target?: any, key?: string): any => {
     let logger: Log;
 
     // property getter
     const getter = () => {
       if (!logger) {
-        logger = DI.get<LogModule>("LogModule").getLogger(options);
-      }
 
+        const allLoggers = DI.get(Array.ofType(Log));
+        const found = allLoggers.find(l => l.Name);
+
+        if (found) {
+          logger = found;
+        } else {
+          logger = DI.resolve(Log, [name, variables]);
+        }
+      }
       return logger;
     };
 
@@ -45,396 +38,117 @@ export function Logger(options?: any) {
   };
 }
 
-/**
- * Log stream that writes messages in console with proper colours for message types.
- * * TRACE - gray
- * * DEBUG - white
- * * INFO - cyan
- * * WARN - yellow
- * * ERROR - red
- * * FATAL - red on white background
- */
-export class ConsoleLogStream extends Writable {
-  private TRACE = 10;
-  private DEBUG = 20;
-  private INFO = 30;
-  private WARN = 40;
-  private ERROR = 50;
-  private FATAL = 60;
-
-  public write(chunk: any): boolean {
-    const type = this._getNameFromType(chunk.level);
-    const err = chunk.err
-      ? `Exception: ${chunk.err.name}, ${chunk.err.message}, ${chunk.err.stack}`
-      : "";
-    const message = `${chunk.time.toISOString()} ${type} ${chunk.name}: ${
-      chunk.msg
-    } (module=${chunk.module}) ${err}`;
-    let c = null;
-
-    switch (chunk.level) {
-      case this.TRACE:
-        c = chalk.gray(message);
-        break;
-      case this.DEBUG:
-        c = chalk.white(message);
-        break;
-      case this.INFO:
-        c = chalk.cyan(message);
-        break;
-      case this.WARN:
-        c = chalk.yellow(message);
-        break;
-      case this.ERROR:
-        c = chalk.red(message);
-        break;
-      case this.FATAL:
-        c = chalk.bgRed.white(message);
-        break;
-    }
-
-    console.log(c);
-
-    return true;
-  }
-
-  private _getNameFromType(type: number) {
-    switch (type) {
-      case this.TRACE:
-        return "TRACE";
-      case this.DEBUG:
-        return "DEBUG";
-      case this.INFO:
-        return "INFO";
-      case this.WARN:
-        return "WARN";
-      case this.ERROR:
-        return "ERROR";
-      case this.FATAL:
-        return "FATAL";
-    }
-  }
+interface LogTargetDesc {
+  instance: LogTarget;
+  options: TargetsOption;
 }
-
-/**
- * Some declarations taken from bunyan
- * Used to add some abstraction and allow implement own logging system
- */
-
-type LogLevelString = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
-type LogLevel = LogLevelString | number;
-
-type Serializer = (input: any) => any;
-
-interface Serializers {
-  [key: string]: Serializer;
-}
-
-interface Stream {
-  type?: string;
-  level?: LogLevel;
-  path?: string;
-  stream?: NodeJS.WritableStream | Stream;
-  closeOnExit?: boolean;
-  period?: string;
-  count?: number;
-  name?: string;
-  reemitErrorEvents?: boolean;
-}
-
-interface LoggerOptions {
-  name: string;
-  streams?: Stream[];
-  level?: LogLevel;
-  stream?: NodeJS.WritableStream;
-  serializers?: Serializers;
-  src?: boolean;
-  [custom: string]: any;
-}
-
-/**
- * Default logger options
- * used as fallback if no config is provided
- */
-const DEFAULT_OPTIONS: LoggerOptions = {
-  name: "spine-framework",
-  serializers: bunyan.stdSerializers,
-  /**
-   * streams to log to. See more on bunyan docs
-   */
-  streams: [
-    {
-      type: "raw",
-
-      /**
-       * We use default console log stream with colors
-       */
-      stream: new ConsoleLogStream(),
-      level: process.env.NODE_ENV === "development" ? "trace" : "info"
-    }
-  ]
-};
 
 /**
  * Default log implementation interface. Taken from bunyan. Feel free to implement own.
  */
-export interface Log {
-  /**
-   * Returns a boolean: is the `trace` level enabled?
-   *
-   * This is equivalent to `log.isTraceEnabled()` or `log.isEnabledFor(TRACE)` in log4j.
-   */
-  trace(): boolean;
+@NewInstance()
+export class Log {
 
-  /**
-   * Special case to log an `Error` instance to the record.
-   * This adds an `err` field with exception details
-   * (including the stack) and sets `msg` to the exception
-   * message or you can specify the `msg`.
-   */
-  trace(error: Error, ...params: any[]): void;
+  @Config("logger")
+  protected Options: LogOptions;
 
-  /**
-   * The first field can optionally be a "fields" object, which
-   * is merged into the log record.
-   *
-   * To pass in an Error *and* other fields, use the `err`
-   * field name for the Error instance.
-   */
-  trace(obj: Object, ...params: any[]): void;
+  protected Rules: LogRule[];
 
-  /**
-   * Uses `util.format` for msg formatting.
-   */
-  trace(format: any, ...params: any[]): void;
+  protected Targets: LogTargetDesc[];
 
-  /**
-   * Returns a boolean: is the `debug` level enabled?
-   *
-   * This is equivalent to `log.isDebugEnabled()` or `log.isEnabledFor(DEBUG)` in log4j.
-   */
-  debug(): boolean;
+  constructor(public Name: string, public Variables: any, protected Parent?: Log) {
 
-  /**
-   * Special case to log an `Error` instance to the record.
-   * This adds an `err` field with exception details
-   * (including the stack) and sets `msg` to the exception
-   * message or you can specify the `msg`.
-   */
-  debug(error: Error, ...params: any[]): void;
+    this.Rules = this.Options.rules.filter(r => {
 
-  /**
-   * The first field can optionally be a "fields" object, which
-   * is merged into the log record.
-   *
-   * To pass in an Error *and* other fields, use the `err`
-   * field name for the Error instance.
-   */
-  debug(obj: Object, ...params: any[]): void;
+      const pos = r.name.indexOf("*");
+      if (pos !== -1) {
 
-  /**
-   * Uses `util.format` for msg formatting.
-   */
-  debug(format: any, ...params: any[]): void;
+        // all
+        if (pos === 0) {
+          return true;
+        }
 
-  /**
-   * Returns a boolean: is the `info` level enabled?
-   *
-   * This is equivalent to `log.isInfoEnabled()` or `log.isEnabledFor(INFO)` in log4j.
-   */
-  info(): boolean;
+        return this.Name.startsWith(r.name.substring(0, r.name.lastIndexOf("*") - 1));
+      }
 
-  /**
-   * Special case to log an `Error` instance to the record.
-   * This adds an `err` field with exception details
-   * (including the stack) and sets `msg` to the exception
-   * message or you can specify the `msg`.
-   */
-  info(error: Error, ...params: any[]): void;
-
-  /**
-   * The first field can optionally be a "fields" object, which
-   * is merged into the log record.
-   *
-   * To pass in an Error *and* other fields, use the `err`
-   * field name for the Error instance.
-   */
-  info(obj: Object, ...params: any[]): void;
-
-  /**
-   * Uses `util.format` for msg formatting.
-   */
-  info(format: any, ...params: any[]): void;
-
-  /**
-   * Returns a boolean: is the `warn` level enabled?
-   *
-   * This is equivalent to `log.isWarnEnabled()` or `log.isEnabledFor(WARN)` in log4j.
-   */
-  warn(): boolean;
-
-  /**
-   * Special case to log an `Error` instance to the record.
-   * This adds an `err` field with exception details
-   * (including the stack) and sets `msg` to the exception
-   * message or you can specify the `msg`.
-   */
-  warn(error: Error, ...params: any[]): void;
-
-  /**
-   * The first field can optionally be a "fields" object, which
-   * is merged into the log record.
-   *
-   * To pass in an Error *and* other fields, use the `err`
-   * field name for the Error instance.
-   */
-  warn(obj: Object, ...params: any[]): void;
-
-  /**
-   * Uses `util.format` for msg formatting.
-   */
-  warn(format: any, ...params: any[]): void;
-
-  /**
-   * Returns a boolean: is the `error` level enabled?
-   *
-   * This is equivalent to `log.isErrorEnabled()` or `log.isEnabledFor(ERROR)` in log4j.
-   */
-  error(): boolean;
-
-  /**
-   * Special case to log an `Error` instance to the record.
-   * This adds an `err` field with exception details
-   * (including the stack) and sets `msg` to the exception
-   * message or you can specify the `msg`.
-   */
-  error(error: Error, ...params: any[]): void;
-
-  /**
-   * The first field can optionally be a "fields" object, which
-   * is merged into the log record.
-   *
-   * To pass in an Error *and* other fields, use the `err`
-   * field name for the Error instance.
-   */
-  error(obj: Object, ...params: any[]): void;
-
-  /**
-   * Uses `util.format` for msg formatting.
-   */
-  error(format: any, ...params: any[]): void;
-
-  /**
-   * Returns a boolean: is the `fatal` level enabled?
-   *
-   * This is equivalent to `log.isFatalEnabled()` or `log.isEnabledFor(FATAL)` in log4j.
-   */
-  fatal(): boolean;
-
-  /**
-   * Special case to log an `Error` instance to the record.
-   * This adds an `err` field with exception details
-   * (including the stack) and sets `msg` to the exception
-   * message or you can specify the `msg`.
-   */
-  fatal(error: Error, ...params: any[]): void;
-
-  /**
-   * The first field can optionally be a "fields" object, which
-   * is merged into the log record.
-   *
-   * To pass in an Error *and* other fields, use the `err`
-   * field name for the Error instance.
-   */
-  fatal(obj: Object, ...params: any[]): void;
-
-  /**
-   * Uses `util.format` for msg formatting.
-   */
-  fatal(format: any, ...params: any[]): void;
-
-  child(options: Object, simple?: boolean): Log;
-}
-
-/**
- * Abstract class to implement for framework log module.
- */
-export abstract class LogModule extends SyncModule {
-  public abstract getLogger(options?: any): Log;
-}
-
-class EmptyLogSink implements Log
-{
-  trace(..._args:  any[]): any{};
-  debug(..._args:  any[]): any{};
-  info(..._args:  any[]): any{};
-  warn(..._args:  any[]): any{};
-  error(..._args:  any[]): any{};
-  fatal(..._args:  any[]): any{};
-
-  child(_options: Object, _simple?: boolean): Log {
-    return new EmptyLogSink();
-  }
-  
-}
-
-/**
- * Logger that do nothing. Usefull with unit testing
- */
-export class SpinaJSEmptyLog extends LogModule
-{
-  public getLogger(_options?: any): Log {
-    return new EmptyLogSink();
-    
-  }
-  resolve(_container: IContainer): void {
-     
-  }
-  
-}
-
-/**
- * Default Log implementation that uses bunyan internally. Feel free to implement own
- */
-@Injectable(LogModule)
-export class SpinaJsDefaultLog extends LogModule {
-  /**
-   * Injected Configuration object
-   */
-  @Autoinject()
-  public cfg: Configuration = null;
-
-  /**
-   * root logger
-   * @access protected
-   */
-  protected log: Log;
-
-  /**
-   * Name of module
-   * @access protected
-   */
-  protected name: string = "Log";
-
-  /**
-   * Creates child logger
-   * @param options - additional logger options eg. fields.
-   */
-  public getLogger(options?: any): Log {
-    return this.log.child(options);
-  }
-
-  /**
-   * Initializes bunyan logger & hooks for process:uncaughtException to log fatal application events
-   */
-  public resolve() {
-    // get config
-    this.log = bunyan.createLogger(
-      this.cfg.get<LoggerOptions>(["log"], DEFAULT_OPTIONS)
-    );
-
-    process.on("uncaughtException", (err: Error) => {
-      this.log.fatal(err);
+      return this.Name === r.name;
     });
+
+    this.Targets = this.Rules.map(r => {
+      const found = this.Options.targets.find(t => t.name === r.target);
+      return {
+        instance: DI.resolve<LogTarget>(found.type, [found.options]),
+        options: found
+      };
+    });
+
+  }
+
+  protected write(err: Error | string, message: string | any[], level: LogLevel, ...args: any[]) {
+    this.Targets.forEach(t => t.instance.write({
+      Level: level,
+      Variables: {
+        error: (err instanceof Error) ? err : undefined,
+        ...this.Variables,
+        ...this.Options.variables
+      },
+      Message: (err instanceof Error) ? message as string : err,
+      MessageVars: args,
+    }, t.options.options.layout))
+  }
+
+  public trace(message: string, ...args: any[]): void;
+  public trace(err: Error, message: string, ...args: any[]): void;
+  public trace(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Trace, ...args);
+  }
+
+
+  public debug(message: string, ...args: any[]): void;
+  public debug(err: Error, message: string, ...args: any[]): void;
+  public debug(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Debug, ...args);
+  }
+
+  public info(message: string, ...args: any[]): void;
+  public info(err: Error, message: string, ...args: any[]): void;
+  public info(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Info, ...args);
+  }
+
+  public warn(message: string, ...args: any[]): void;
+  public warn(err: Error, message: string, ...args: any[]): void;
+  public warn(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Warn, ...args);
+  }
+
+  public error(message: string, ...args: any[]): void;
+  public error(err: Error, message: string, ...args: any[]): void;
+  public error(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Error, ...args);
+  }
+
+  public fatal(message: string, ...args: any[]): void;
+  public fatal(err: Error, message: string, ...args: any[]): void;
+  public fatal(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Fatal, ...args);
+  }
+
+  public security(message: string, ...args: any[]): void;
+  public security(err: Error, message: string, ...args: any[]): void;
+  public security(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Security, ...args);
+  }
+
+
+  public success(message: string, ...args: any[]): void {
+    this.write(message, null, LogLevel.Security, ...args);
+  }
+
+  public child(name: string, variables?: {}): Log {
+    return DI.resolve(Log, [`${this.Name}.${name}`, {
+      ...this.Variables,
+      ...variables
+    }, this]);
   }
 }

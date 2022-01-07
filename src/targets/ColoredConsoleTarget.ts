@@ -1,5 +1,4 @@
 import { ColoredConsoleTargetOptions, LogLevelStrings, LogTargetData, LogVariable } from './../types';
-import * as util from "util";
 import { Inject, Injectable, Singleton } from '@spinajs/di';
 import { LogTarget } from './LogTarget';
 import { LogLevel } from '..';
@@ -37,12 +36,6 @@ export class ColoredConsoleTarget extends LogTarget<ColoredConsoleTargetOptions>
             return;
         }
 
-        const message = data.MessageVars.length !== 0 ? util.format(data.Message, data.MessageVars) : data.Message;
-
-        // format message, allow to use log variables also in user messages
-        (data.Variables as any)["message"] = this.format(data, message);
-        (data.Variables as any)["level"] = LogLevelStrings[data.Level].toUpperCase();
-
-        this.StdConsoleCallbackMap[data.Level]((colors as any)[LogLevelStrings[data.Level]](this.format(data, this.Options.layout)));
+        this.StdConsoleCallbackMap[data.Level]((colors as any)[LogLevelStrings[data.Level]](this.format(data.Variables, this.Options.layout)));
     }
 }

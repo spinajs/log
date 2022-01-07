@@ -17,9 +17,6 @@ class TestConfiguration extends FrameworkConfiguration {
     }
 }
 
-
-
-
 describe("logger tests", function () {
 
     this.timeout(15000);
@@ -52,8 +49,12 @@ describe("logger tests", function () {
         log.error("Hello world");
         log.fatal("Hello world");
         log.security("Hello world");
+    })
 
+    it("Should write to file", async () => { 
 
+        const log = DI.resolve(Log, ["FileLogger"]);
+        log.info("Hello world");
 
     })
 });

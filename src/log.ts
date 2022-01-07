@@ -1,42 +1,11 @@
 import { Config } from "@spinajs/configuration";
 import { DI, NewInstance } from "@spinajs/di";
 import { LogTarget } from "./targets/LogTarget";
-import { CommonTargetOptions, LogLevel, LogOptions, LogRule, TargetsOption } from "./types";
+import { CommonTargetOptions, LogLevel, LogLevelStrings, LogOptions, LogRule, TargetsOption } from "./types";
+import * as util from "util";
 
 
-/**
- * Creates child logger
- *
- * @param options  - additional logger options
- */
-export function Logger(name: string, variables?: {}) {
-  return (target?: any, key?: string): any => {
-    let logger: Log;
 
-    // property getter
-    const getter = () => {
-      if (!logger) {
-
-        const allLoggers = DI.get(Array.ofType(Log));
-        const found = allLoggers.find(l => l.Name);
-
-        if (found) {
-          logger = found;
-        } else {
-          logger = DI.resolve(Log, [name, variables]);
-        }
-      }
-      return logger;
-    };
-
-    // Create new property with getter and setter
-    Object.defineProperty(target, key, {
-      get: getter,
-      enumerable: false,
-      configurable: false
-    });
-  };
-}
 
 interface LogTargetDesc {
   instance: LogTarget<CommonTargetOptions>;
@@ -82,19 +51,29 @@ export class Log {
       };
     });
 
+    process.on("uncaughtException", (err) => {
+      this.fatal(err, "Unhandled exception occured");
+    });
+
+    process.on("unhandledRejection", (reason, p) => {
+      this.fatal(reason as any, "Unhandled rejection at Promise %s", p);
+    });
   }
 
   protected write(err: Error | string, message: string | any[], level: LogLevel, ...args: any[]) {
+
+    const sMsg = (err instanceof Error) ? message as string : err;
+    const tMsg = args.length !== 0 ? util.format(sMsg, args) : sMsg;
+
     this.Targets.forEach(t => t.instance.write({
       Level: level,
       Variables: {
         error: (err instanceof Error) ? err : undefined,
+        level: LogLevelStrings[level].toUpperCase(),
         logger: this.Name,
-        ...this.Variables,
-        ...this.Options.variables
-      },
-      Message: (err instanceof Error) ? message as string : err,
-      MessageVars: args,
+        message: tMsg,
+        ...this.Variables
+      }
     }));
   }
 

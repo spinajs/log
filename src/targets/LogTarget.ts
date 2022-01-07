@@ -1,7 +1,7 @@
 import { CommonTargetOptions } from './../types';
 import { Inject } from "@spinajs/di";
 import _ from "lodash";
-import { LogVariable, ColoredConsoleTargetOptions, LogTargetData } from "../types";
+import { LogVariable, LogTargetData } from "../types";
 
 @Inject(Array.ofType(LogVariable))
 export abstract class LogTarget<T extends CommonTargetOptions> {
@@ -12,7 +12,10 @@ export abstract class LogTarget<T extends CommonTargetOptions> {
 
     protected Options: T;
 
-    constructor(protected Variables: LogVariable[], options: ColoredConsoleTargetOptions) {
+    public HasError: boolean = false;
+    public Error: Error = undefined;
+
+    constructor(protected Variables: LogVariable[], options: T) {
 
         this.Variables.forEach(v => {
             this.VariablesDictionary.set(v.Name, v);
@@ -30,7 +33,7 @@ export abstract class LogTarget<T extends CommonTargetOptions> {
 
     public abstract write(data: LogTargetData): Promise<void>;
 
-    protected format(data: LogTargetData, layout: string): string {
+    protected format(customVars: {}, layout: string): string {
 
         this.LayoutRegexp.lastIndex = 0;
 
@@ -43,15 +46,15 @@ export abstract class LogTarget<T extends CommonTargetOptions> {
 
         varMatch.forEach(v => {
 
-            if ((data.Variables as any)[v[1]]) {
-                result = result.replace(v[0], (data.Variables as any)[v[1]]);
-            } else if (this.VariablesDictionary.has(v[1])) {
+            if ((customVars as any)[v[2]]) {
+                result = result.replace(v[0], (customVars as any)[v[2]]);
+            } else if (this.VariablesDictionary.has(v[2])) {
 
                 // optional parameter eg. {env:PORT}
                 if (v[3]) {
-                    result = result.replace(v[0], (this.VariablesDictionary.get(v[1]).Value(v[2])));
+                    result = result.replace(v[0], (this.VariablesDictionary.get(v[2]).Value(v[4])));
                 } else {
-                    result = result.replace(v[0], (this.VariablesDictionary.get(v[1]).Value()));
+                    result = result.replace(v[0], (this.VariablesDictionary.get(v[2]).Value()));
                 }
 
             }

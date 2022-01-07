@@ -141,7 +141,6 @@ export class Log {
     this.write(err, message, LogLevel.Security, ...args);
   }
 
-
   public success(message: string, ...args: any[]): void {
     this.write(message, null, LogLevel.Success, ...args);
   }

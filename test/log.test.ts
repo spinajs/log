@@ -52,9 +52,23 @@ describe("logger tests", function () {
     })
 
     it("Should write to file", async () => { 
-
         const log = DI.resolve(Log, ["FileLogger"]);
         log.info("Hello world");
+    })
 
+    it("Should write to specific target", async() =>{ 
+
+    });
+
+    it("Should use custom variables", async () => { 
+
+    })
+
+    it("should create file logger per creation", async () =>{ 
+
+    })
+
+    it("shuold support creating logger programatically", async() =>{ 
+        
     })
 });

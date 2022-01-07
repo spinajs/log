@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 import { LogVariable } from "../types";
 
 
-@Injectable()
+@Injectable(LogVariable)
 export class DateTimeLogVariable extends LogVariable {
     public get Name(): string {
         return "datetime";
@@ -15,7 +15,7 @@ export class DateTimeLogVariable extends LogVariable {
 }
 
 
-@Injectable()
+@Injectable(LogVariable)
 export class DateLogVariable extends LogVariable {
     public get Name(): string {
         return "date";
@@ -30,7 +30,7 @@ export class DateLogVariable extends LogVariable {
 }
 
 
-@Injectable()
+@Injectable(LogVariable)
 export class TimeLogVariable extends LogVariable {
     public get Name(): string {
         return "time";

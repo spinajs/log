@@ -18,7 +18,7 @@ module.exports = {
             }
         ],
         rules: [
-            { name: "*", level: "info", target: "Console" }
+            { name: "*", level: "trace", target: "Console" }
         ],
 
     }

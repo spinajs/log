@@ -4,6 +4,7 @@ import { FileTargetOptions, LogTargetData, LogVariable } from "../types";
 import fs from "fs";
 import path from "path";
 import { Job, scheduleJob } from "node-schedule";
+import { InvalidOption } from "@spinajs/exceptions";
 import { EOL } from "os";
 import * as glob from "glob";
 import * as zlib from "zlib";
@@ -87,6 +88,10 @@ export class FileTarget extends LogTarget<FileTargetOptions>
 
             this.flush();
 
+            if (!fs.existsSync(this.LogPath)) {
+                return;
+            }
+
             fs.closeSync(this.LogFileDescriptor);
             fs.copyFileSync(this.LogPath, archPath);
             fs.unlinkSync(this.LogPath);
@@ -163,20 +168,25 @@ export class FileTarget extends LogTarget<FileTargetOptions>
             this.LogDirPath = this.format({}, path.dirname(path.resolve(this.Options.path)));
             this.ArchiveDirPath = this.Options.archivePath ? this.format({}, path.resolve(this.Options.archivePath)) : this.LogDirPath
             this.LogFileName = this.format({}, path.basename(this.Options.path));
+            this.LogPath = path.join(this.LogDirPath, this.LogFileName);
 
             const { name, ext } = path.parse(this.LogFileName);
             this.LogFileExt = ext;
             this.LogBaseName = name;
 
+            if (!this.LogDirPath) {
+                throw new InvalidOption("Missing LogDirPath log option");
+            }
+
             if (!fs.existsSync(this.LogDirPath)) {
                 fs.mkdirSync(this.LogDirPath)
             }
 
-            if (!fs.existsSync(this.ArchiveDirPath)) {
-                fs.mkdirSync(this.ArchiveDirPath)
+            if (this.ArchiveDirPath) {
+                if (!fs.existsSync(this.ArchiveDirPath)) {
+                    fs.mkdirSync(this.ArchiveDirPath)
+                }
             }
-
-            this.LogPath = path.join(this.LogDirPath, this.LogFileName);
 
             if (fs.existsSync(this.LogPath)) {
                 const { size } = fs.statSync(this.LogPath);

@@ -65,6 +65,11 @@ export interface CommonTargetOptions {
     enabled: boolean;
 }
 
+export interface BlackHoleTargetOptions extends CommonTargetOptions
+{ 
+
+}
+
 export interface ColoredConsoleTargetOptions extends CommonTargetOptions {
 
     /**

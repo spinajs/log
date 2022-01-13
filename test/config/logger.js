@@ -8,11 +8,11 @@ module.exports = {
                 options: {
                     path: "./test/logs/log_{date:dd_MM_yyyy}.txt",
                     archivePath: "./test/logs/archive",
-                    maxSize: 10,
+                    maxSize: 1024 * 1024,
                     compress: true,
                     rotate: "*/2 * * * *",
                     maxArchiveFiles: 5,
-                    bufferSize: 0
+                    bufferSize: 8 * 1024
                 }
 
             },

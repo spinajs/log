@@ -1,20 +1,35 @@
+import { BlackHoleTarget } from './../src/targets/BlackHoleTarget';
 import 'mocha';
-import { DI } from '@spinajs/di';
+import { DI, IContainer } from '@spinajs/di';
 import { Configuration, FrameworkConfiguration } from "@spinajs/configuration";
 import sinon from 'sinon';
-import { Log } from '../src';
+import { Log, LogLevel } from '../src';
 import { expect } from 'chai';
+import _ from 'lodash';
 
 class TestConfiguration extends FrameworkConfiguration {
 
-    constructor() {
-        super();
+    public async resolveAsync(container: IContainer): Promise<void> {
+        super.resolveAsync(container);
 
-        this.CustomConfigPaths = [
-            // project path
-            "/test/config",
-        ];
+        _.merge(this.Config, {
+            logger: {
+
+                targets: {
+                    name: "Empty",
+                    type: "BlackHoleTarget"
+                },
+
+                rules: [
+                    { name: "*", level: "trace", target: "Empty" },
+                ],
+            }
+        })
     }
+}
+
+function logger(){
+    return DI.resolve(Log, ["TestLogger"]);
 }
 
 describe("logger tests", function () {
@@ -33,42 +48,56 @@ describe("logger tests", function () {
 
     it("Should create simple console logger", async () => {
 
-        const log = DI.resolve(Log, ["TestLogger"]);
+        const log = logger();
 
         expect(log).to.be.not.null;
         expect(log.Name).to.eq("TestLogger");
     })
 
-    it("Should log with layout", async () =>{ 
-        const log = DI.resolve(Log, ["TestLogger"]);
+    it("Should log trace", async () => {
+        const log = logger();
+        const spy = sinon.spy(BlackHoleTarget.prototype, "write");
+
         log.trace("Hello world");
-        log.debug("Hello world");
-        log.info("Hello world");
-        log.success("Hello world");
-        log.warn("Hello world");
-        log.error("Hello world");
-        log.fatal("Hello world");
-        log.security("Hello world");
+
+        expect(spy.args[0]).to.include({
+            Level: LogLevel.Trace
+        });
     })
 
-    it("Should write to file", async () => { 
-        const log = DI.resolve(Log, ["FileLogger"]);
-        log.info("Hello world");
+    it("Should log with specified file layout", async () => {
+
     })
 
-    it("Should write to specific target", async() =>{ 
+    it("Check default layout variables are avaible", async () => {
+
+    })
+
+    it("Should write log only with specified level", async () => {
+
+    })
+
+    it("Should resolve logger with name", async () => {
+
+    })
+
+    it("Should write to specific target", async () => {
 
     });
 
-    it("Should use custom variables", async () => { 
+    it("Should use custom variables", async () => {
 
     })
 
-    it("should create file logger per creation", async () =>{ 
+    it("should support creating logger programatically", async () => {
 
     })
 
-    it("shuold support creating logger programatically", async() =>{ 
-        
+    it("Should write exception message along with user message", async () => {
+
+    })
+
+    it("Should write to custom target", async () => {
+
     })
 });

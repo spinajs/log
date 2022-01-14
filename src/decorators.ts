@@ -8,7 +8,7 @@ import { Log } from "./log";
  * @param variables optional log variables
  */
 export function Logger(name: string, variables?: {}) {
-    return (target?: any, key?: string): any => {
+    return (target: any, key: string): any => {
         let logger: Log;
 
         // property getter

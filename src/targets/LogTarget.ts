@@ -1,10 +1,10 @@
 import { CommonTargetOptions } from './../types';
-import { Inject } from "@spinajs/di";
+import { Inject, SyncModule } from "@spinajs/di";
 import _ from "lodash";
 import { LogVariable, LogTargetData } from "../types";
 
 @Inject(Array.ofType(LogVariable))
-export abstract class LogTarget<T extends CommonTargetOptions> {
+export abstract class LogTarget<T extends CommonTargetOptions> extends SyncModule {
 
     protected VariablesDictionary: Map<string, LogVariable> = new Map();
 
@@ -13,9 +13,10 @@ export abstract class LogTarget<T extends CommonTargetOptions> {
     protected Options: T;
 
     public HasError: boolean = false;
-    public Error: Error = undefined;
+    public Error: Error | null = null;
 
     constructor(protected Variables: LogVariable[], options: T) {
+        super();
 
         this.Variables.forEach(v => {
             this.VariablesDictionary.set(v.Name, v);
@@ -39,7 +40,7 @@ export abstract class LogTarget<T extends CommonTargetOptions> {
 
         const varMatch = [...layout.matchAll(this.LayoutRegexp)];
         if (!varMatch) {
-            return;
+            return "";
         }
 
         let result = layout;
@@ -48,15 +49,17 @@ export abstract class LogTarget<T extends CommonTargetOptions> {
 
             if ((customVars as any)[v[2]]) {
                 result = result.replace(v[0], (customVars as any)[v[2]]);
-            } else if (this.VariablesDictionary.has(v[2])) {
+            } else {
 
-                // optional parameter eg. {env:PORT}
-                if (v[3]) {
-                    result = result.replace(v[0], (this.VariablesDictionary.get(v[2]).Value(v[4])));
-                } else {
-                    result = result.replace(v[0], (this.VariablesDictionary.get(v[2]).Value()));
+                const variable = this.VariablesDictionary.get(v[2]);
+                if (variable) {
+                    // optional parameter eg. {env:PORT}
+                    if (v[3]) {
+                        result = result.replace(v[0], variable.Value(v[4]));
+                    } else {
+                        result = result.replace(v[0], variable.Value());
+                    }
                 }
-
             }
         })
 

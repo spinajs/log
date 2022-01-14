@@ -1,4 +1,4 @@
-import { Inject, Injectable, NewInstance } from "@spinajs/di";
+import { IContainer, Inject, Injectable, NewInstance } from "@spinajs/di";
 import { LogTarget } from "./LogTarget";
 import { FileTargetOptions, LogTargetData, LogVariable } from "../types";
 import fs from "fs";
@@ -33,9 +33,9 @@ export class FileTarget extends LogTarget<FileTargetOptions>
 
     protected Buffer: any[] = [];
 
-    constructor(variables: LogVariable[], options: FileTargetOptions) {
-        super(variables, options);
-
+ 
+    public resolve(_ : IContainer)
+    {
         this.initialize();
         this.rotate();
 
@@ -46,6 +46,8 @@ export class FileTarget extends LogTarget<FileTargetOptions>
                 fs.closeSync(this.LogFileDescriptor);
             }
         });
+
+        this.resolve(_);
     }
 
     public async write(data: LogTargetData): Promise<void> {

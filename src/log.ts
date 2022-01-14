@@ -1,18 +1,34 @@
 import { Config } from "@spinajs/configuration";
 import { Autoinject, DI, IContainer, NewInstance, SyncModule } from "@spinajs/di";
 import { LogTarget } from "./targets/LogTarget";
-import { CommonTargetOptions, LogLevel, LogLevelStrings, LogOptions, LogRule, TargetsOption } from "./types";
+import { CommonTargetOptions, LogLevel, LogLevelStrings, LogOptions, LogRule, LogTargetData, TargetsOption } from "./types";
 import * as util from "util";
 import globToRegexp from "glob-to-regexp";
 import { DataValidator } from "@spinajs/validation";
 import { InvalidOption } from "@spinajs/exceptions";
 
 
+function createLogMessageObject(err: Error | string, message: string | any[], level: LogLevel, logger: string, ...args: any[]): LogTargetData {
+
+  const sMsg = (err instanceof Error) ? message as string : err;
+  const tMsg = args.length !== 0 ? util.format(sMsg, args) : sMsg;
+
+  return {
+    Level: level,
+    Variables: {
+      error: (err instanceof Error) ? err : undefined,
+      level: LogLevelStrings[level].toUpperCase(),
+      logger: logger,
+      message: tMsg,
+      ...this.Variables
+    }
+  }
+}
 
 
 interface LogTargetDesc {
   instance: LogTarget<CommonTargetOptions>;
-  options: TargetsOption;
+  options?: TargetsOption;
 }
 
 /**
@@ -53,13 +69,26 @@ export class Log extends SyncModule {
     process.on("unhandledRejection", (reason, p) => {
       this.fatal(reason as any, "Unhandled rejection at Promise %s", p);
     });
+
+    this.writeBufferedMessages();
+    this.resolve(_);
+
+    Log.Loggers.set(this.Name, this);
+  }
+
+  protected writeBufferedMessages() {
+    if (Log.LogBuffer.has(this.Name)) {
+      Log.LogBuffer.get(this.Name).filter((msg: LogTargetData) => msg.Variables.logger === this.Name).forEach((msg: LogTargetData) => {
+        this.Targets.forEach(t => t.instance.write(msg));
+      });
+    }
   }
 
   protected resolveLogTargets() {
     this.Targets = this.Rules.map(r => {
       const found = this.Options.targets.find(t => t.name === r.target);
 
-      if (!!found) {
+      if (!found) {
         throw new InvalidOption(`No target matching rule ${r.target}`);
       }
 
@@ -77,20 +106,7 @@ export class Log extends SyncModule {
   }
 
   protected write(err: Error | string, message: string | any[], level: LogLevel, ...args: any[]) {
-
-    const sMsg = (err instanceof Error) ? message as string : err;
-    const tMsg = args.length !== 0 ? util.format(sMsg, args) : sMsg;
-
-    this.Targets.forEach(t => t.instance.write({
-      Level: level,
-      Variables: {
-        error: (err instanceof Error) ? err : undefined,
-        level: LogLevelStrings[level].toUpperCase(),
-        logger: this.Name,
-        message: tMsg,
-        ...this.Variables
-      }
-    }));
+    this.Targets.forEach(t => t.instance.write(createLogMessageObject(err, message, level, this.Name, ...args)));
   }
 
   public trace(message: string, ...args: any[]): void;
@@ -136,8 +152,88 @@ export class Log extends SyncModule {
     this.write(err, message, LogLevel.Security, ...args);
   }
 
-  public success(message: string, ...args: any[]): void {
-    this.write(message, null, LogLevel.Success, ...args);
+  public success(message: string, ...args: any[]): void;
+  public success(err: Error, message: string, ...args: any[]): void;
+  public success(err: Error | string, message: string | any[], ...args: any[]): void {
+    this.write(err, message, LogLevel.Security, ...args);
+  }
+
+  /**
+   *  STATIC METHODS FOR LOGGER, ALLOWS TO LOG TO ANY TARGET
+   *  EVEN BEFORE LOG MODULE INITIALIZATION. 
+   * 
+   *  Prevents from losing log message when initializing modules
+   */
+
+
+  static LogBuffer: Map<string, LogTargetData[]> = new Map();
+  static Loggers: Map<string, Log> = new Map();
+
+  static write(err: Error | string, message: string | any[], level: LogLevel, name: string, ...args: any[]) {
+
+    const msg = createLogMessageObject(err, message, level, name, ...args);
+
+    // if we have already created logger write to it
+    if (Log.Loggers.has(name)) {
+      Log.Loggers.get(name).Targets.forEach(t => t.instance.write(msg));
+      return;
+    }
+
+    // otherwise store in buffer
+    if (Log.LogBuffer.has(name)) {
+      Log.LogBuffer.get(name).push(msg)
+    } else {
+      Log.LogBuffer.set(name, [msg])
+    }
+  }
+
+  public static trace(message: string, name: string, ...args: any[]): void;
+  public static trace(err: Error, message: string, name: string, ...args: any[]): void;
+  public static trace(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Trace, name, ...args);
+  }
+
+
+  public static debug(message: string, name: string, ...args: any[]): void;
+  public static debug(err: Error, message: string, name: string, ...args: any[]): void;
+  public static debug(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Debug, name, ...args);
+  }
+
+  public static info(message: string, name: string, ...args: any[]): void;
+  public static info(err: Error, message: string, name: string, ...args: any[]): void;
+  public static info(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Info, name, ...args);
+  }
+
+  public static warn(message: string, name: string, ...args: any[]): void;
+  public static warn(err: Error, message: string, name: string, ...args: any[]): void;
+  public static warn(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Warn, name, ...args);
+  }
+
+  public static error(message: string, name: string, ...args: any[]): void;
+  public static error(err: Error, message: string, name: string, ...args: any[]): void;
+  public static error(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Error, name, ...args);
+  }
+
+  public static fatal(message: string, name: string, ...args: any[]): void;
+  public static fatal(err: Error, message: string, name: string, ...args: any[]): void;
+  public static fatal(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Fatal, name, ...args);
+  }
+
+  public static security(message: string, name: string, ...args: any[]): void;
+  public static security(err: Error, message: string, name: string, ...args: any[]): void;
+  public static security(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Security, name, ...args);
+  }
+
+  public static success(message: string, name: string, ...args: any[]): void;
+  public static success(err: Error, message: string, name: string, ...args: any[]): void;
+  public static success(err: Error | string, message: string | any[], name: string, ...args: any[]): void {
+    Log.write(err, message, LogLevel.Success, name, ...args);
   }
 
   public child(name: string, variables?: {}): Log {

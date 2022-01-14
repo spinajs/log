@@ -1,5 +1,5 @@
 import { ColoredConsoleTargetOptions, LogLevelStrings, LogTargetData, LogVariable } from './../types';
-import { Inject, Injectable, Singleton } from '@spinajs/di';
+import { IContainer, Inject, Injectable, Singleton } from '@spinajs/di';
 import { LogTarget } from './LogTarget';
 import { LogLevel } from '..';
 
@@ -23,11 +23,11 @@ export class ColoredConsoleTarget extends LogTarget<ColoredConsoleTargetOptions>
 
         [LogLevel.Warn]: console.warn,
     }
-
-    constructor(variables: LogVariable[], options: ColoredConsoleTargetOptions) {
-        super(variables, options);
-
+   
+    public resolve(_ : IContainer)
+    {
         colors.setTheme(this.Options.theme);
+        this.resolve(_);
     }
 
     public async write(data: LogTargetData): Promise<void> {

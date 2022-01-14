@@ -8,6 +8,6 @@ export class EnvVariable extends LogVariable {
         return "env";
     }
     public Value(option: string): string {
-        return process.env[option];
+        return process.env[option] ?? "";
     }
 }

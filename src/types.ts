@@ -38,8 +38,7 @@ export interface LogRule {
     target: string;
 }
 
-export interface TargetsOption
-{
+export interface TargetsOption {
     name: string,
     type: string,
     options: CommonTargetOptions;
@@ -58,15 +57,14 @@ export interface CommonTargetOptions {
      * Default message layout is: {datetime} {level} {message} ({logger})
      */
     layout: string;
-    
+
     /**
      * Is logger enabled
      */
     enabled: boolean;
 }
 
-export interface BlackHoleTargetOptions extends CommonTargetOptions
-{ 
+export interface BlackHoleTargetOptions extends CommonTargetOptions {
 
 }
 
@@ -87,8 +85,7 @@ export interface ColoredConsoleTargetOptions extends CommonTargetOptions {
     }
 }
 
-export interface FileTargetOptions extends CommonTargetOptions
-{
+export interface FileTargetOptions extends CommonTargetOptions {
     /**
      * path whre log is stored. It is allowed to use variables to create path eg. date / time etc.
      */
@@ -99,7 +96,7 @@ export interface FileTargetOptions extends CommonTargetOptions
      * 
      * Default is none. When not set archive files are stored in same folder as logs.
      */
-    archivePath : string;
+    archivePath: string;
 
     /**
      * Maximum log file size, if exceeded it is moved to archive, and new log file is created
@@ -113,7 +110,7 @@ export interface FileTargetOptions extends CommonTargetOptions
      * 
      * Default is false
      */
-    compress : boolean;
+    compress: boolean;
 
     /**
      * Should rotate log file eg. new  file every new day. 
@@ -128,7 +125,7 @@ export interface FileTargetOptions extends CommonTargetOptions
      * How mutch archive files should be preserved before deletion. Default is 0
      * Eg. to store max 5 archive files, set it to 5. Oldest by modification time are deleted.
      */
-    maxArchiveFiles : number;
+    maxArchiveFiles: number;
 
     /**
      * Buffer size for incoming log messages. Messages are stored in buffer before write to file.
@@ -140,5 +137,10 @@ export interface FileTargetOptions extends CommonTargetOptions
 
 export interface LogTargetData {
     Level: LogLevel;
-    Variables: {};
+    Variables: {
+        error: Error | undefined,
+        level: string,
+        logger: string,
+        message: string
+    };
 }

@@ -7,18 +7,28 @@ import { Log, LogLevel } from '../src';
 import { expect } from 'chai';
 import _ from 'lodash';
 
+import { join, normalize, resolve } from 'path';
+function dir(path: string) {
+    return resolve(normalize(join(__dirname, path)));
+}
+
 class TestConfiguration extends FrameworkConfiguration {
 
     public async resolveAsync(container: IContainer): Promise<void> {
         super.resolveAsync(container);
 
         _.merge(this.Config, {
+            system: {
+                dirs: {
+                    schemas: [dir('./../src/schemas')],
+                }
+            },
             logger: {
-
-                targets: {
+                targets: [{
+                    layout: "",
                     name: "Empty",
                     type: "BlackHoleTarget"
-                },
+                }],
 
                 rules: [
                     { name: "*", level: "trace", target: "Empty" },
@@ -28,8 +38,8 @@ class TestConfiguration extends FrameworkConfiguration {
     }
 }
 
-function logger(){
-    return DI.resolve(Log, ["TestLogger"]);
+function logger() {
+    return  DI.resolve(Log, ["TestLogger"]);
 }
 
 describe("logger tests", function () {
@@ -37,9 +47,10 @@ describe("logger tests", function () {
     this.timeout(15000);
 
     before(async () => {
-        DI.register(TestConfiguration).as(Configuration);
 
-        await DI.resolve(Configuration);
+        DI.clearCache();
+        DI.register(TestConfiguration).as(Configuration);
+        DI.resolve(Configuration);
     });
 
     afterEach(() => {
@@ -55,7 +66,7 @@ describe("logger tests", function () {
     })
 
     it("Should log trace", async () => {
-        const log = logger();
+        const log = await logger();
         const spy = sinon.spy(BlackHoleTarget.prototype, "write");
 
         log.trace("Hello world");

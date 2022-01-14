@@ -1,21 +1,18 @@
 import 'mocha';
-import { DI } from '@spinajs/di';
-import { Configuration, FrameworkConfiguration } from "@spinajs/configuration";
+// import { DI } from '@spinajs/di';
+// import { Configuration, FrameworkConfiguration } from "@spinajs/configuration";
 import sinon from 'sinon';
-import { Log } from '../src';
-import { expect } from 'chai';
+// import { Log } from '../src';
+ 
+// const container = DI.child();
 
-class TestConfiguration extends FrameworkConfiguration {
+// class TestConfiguration extends FrameworkConfiguration {
 
-    constructor() {
-        super();
-
-        this.CustomConfigPaths = [
-            // project path
-            "/test/config",
-        ];
-    }
-}
+//     constructor() {
+//         super();
+ 
+//     }
+// }
 
 
 describe("file target tests", function () {
@@ -23,9 +20,9 @@ describe("file target tests", function () {
     this.timeout(15000);
 
     before(async () => {
-        DI.register(TestConfiguration).as(Configuration);
+        // container.register(TestConfiguration).as(Configuration);
 
-        await DI.resolve(Configuration);
+        // await container.resolve(Configuration);
     });
 
     afterEach(() => {
@@ -33,8 +30,8 @@ describe("file target tests", function () {
     });
 
     it("Should write to file", async () => { 
-        const log = DI.resolve(Log, ["FileLogger"]);
-        log.info("Hello world");
+        // const log = container.resolve(Log, ["FileLogger"]);
+        // log.info("Hello world");
     })
 
     it("Should resolve file name with variables", async() =>{ 

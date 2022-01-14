@@ -1,4 +1,15 @@
+import { join, normalize, resolve } from 'path';
+
+function dir(path) {
+    return resolve(normalize(join(__dirname, path)));
+}
+
 module.exports = {
+    system: {
+        dirs: {
+            schemas: [dir('./../schemas')],
+        }
+    },
     logger: {
         variables: [],
         targets: [

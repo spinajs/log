@@ -1,8 +1,11 @@
 import { Config } from "@spinajs/configuration";
-import { DI, NewInstance } from "@spinajs/di";
+import { Autoinject, DI, IContainer, NewInstance, SyncModule } from "@spinajs/di";
 import { LogTarget } from "./targets/LogTarget";
 import { CommonTargetOptions, LogLevel, LogLevelStrings, LogOptions, LogRule, TargetsOption } from "./types";
 import * as util from "util";
+import globToRegexp from "glob-to-regexp";
+import { DataValidator } from "@spinajs/validation";
+import { InvalidOption } from "@spinajs/exceptions";
 
 
 
@@ -16,7 +19,8 @@ interface LogTargetDesc {
  * Default log implementation interface. Taken from bunyan. Feel free to implement own.
  */
 @NewInstance()
-export class Log {
+export class Log extends SyncModule {
+
 
   @Config("logger")
   protected Options: LogOptions;
@@ -25,31 +29,22 @@ export class Log {
 
   protected Targets: LogTargetDesc[];
 
+  @Autoinject()
+  protected Validator: DataValidator;
+
   constructor(public Name: string, public Variables?: any, protected Parent?: Log) {
+    super();
+  }
 
-    this.Rules = this.Options.rules.filter(r => {
+  public resolve(_: IContainer): void {
 
-      const pos = r.name.indexOf("*");
-      if (pos !== -1) {
+    /**
+     * Check if options are valid, if not break, break, break
+     */
+    this.Validator.validate("spinajs/log.configuration.schema.json", this.Options);
 
-        // all
-        if (pos === 0) {
-          return true;
-        }
-
-        return this.Name.startsWith(r.name.substring(0, r.name.lastIndexOf("*") - 1));
-      }
-
-      return this.Name === r.name;
-    });
-
-    this.Targets = this.Rules.map(r => {
-      const found = this.Options.targets.find(t => t.name === r.target);
-      return {
-        instance: DI.resolve<LogTarget<CommonTargetOptions>>(found.type, [found.options]),
-        options: found
-      };
-    });
+    this.matchRulesToLogger();
+    this.resolveLogTargets();
 
     process.on("uncaughtException", (err) => {
       this.fatal(err, "Unhandled exception occured");
@@ -57,6 +52,27 @@ export class Log {
 
     process.on("unhandledRejection", (reason, p) => {
       this.fatal(reason as any, "Unhandled rejection at Promise %s", p);
+    });
+  }
+
+  protected resolveLogTargets() {
+    this.Targets = this.Rules.map(r => {
+      const found = this.Options.targets.find(t => t.name === r.target);
+
+      if (!!found) {
+        throw new InvalidOption(`No target matching rule ${r.target}`);
+      }
+
+      return {
+        instance: DI.resolve<LogTarget<CommonTargetOptions>>(found.type, [found.options]),
+        options: found
+      };
+    });
+  }
+
+  protected matchRulesToLogger() {
+    this.Rules = this.Options.rules.filter(r => {
+      return globToRegexp(r.name).test(this.Name);
     });
   }
 

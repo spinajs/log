@@ -1,7 +1,6 @@
-import { BlackHoleTargetOptions, LogLevelStrings, LogTargetData, LogVariable } from './../types';
+import { BlackHoleTargetOptions, LogTargetData, LogVariable } from './../types';
 import { Inject, Injectable, Singleton } from '@spinajs/di';
 import { LogTarget } from './LogTarget';
-import { LogLevel } from '..';
 
 /**
  * Empty writer, usefull for tests or when we dont want to get any messages

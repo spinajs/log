@@ -59,6 +59,16 @@ export interface CommonTargetOptions {
     layout: string;
 
     /**
+     * Target name
+     */
+    name: string;
+
+    /**
+     * Target type
+     */
+    type: string;
+
+    /**
      * Is logger enabled
      */
     enabled: boolean;

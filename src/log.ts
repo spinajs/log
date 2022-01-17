@@ -8,7 +8,7 @@ import { DataValidator } from "@spinajs/validation";
 import { InvalidOption } from "@spinajs/exceptions";
 
 
-function createLogMessageObject(err: Error | string, message: string | any[], level: LogLevel, logger: string, ...args: any[]): LogTargetData {
+function createLogMessageObject(err: Error | string, message: string | any[], level: LogLevel, logger: string, variables: any, ...args: any[]): LogTargetData {
 
   const sMsg = (err instanceof Error) ? message as string : err;
   const tMsg = args.length !== 0 ? util.format(sMsg, args) : sMsg;
@@ -20,7 +20,7 @@ function createLogMessageObject(err: Error | string, message: string | any[], le
       level: LogLevelStrings[level].toUpperCase(),
       logger: logger,
       message: tMsg,
-      ...this.Variables
+      ...variables
     }
   }
 }
@@ -36,7 +36,6 @@ interface LogTargetDesc {
  */
 @NewInstance()
 export class Log extends SyncModule {
-
 
   @Config("logger")
   protected Options: LogOptions;
@@ -71,7 +70,8 @@ export class Log extends SyncModule {
     });
 
     this.writeBufferedMessages();
-    this.resolve(_);
+
+    super.resolve(_);
 
     Log.Loggers.set(this.Name, this);
   }
@@ -93,7 +93,7 @@ export class Log extends SyncModule {
       }
 
       return {
-        instance: DI.resolve<LogTarget<CommonTargetOptions>>(found.type, [found.options]),
+        instance: DI.resolve<LogTarget<CommonTargetOptions>>(found.type, [found]),
         options: found
       };
     });
@@ -106,7 +106,8 @@ export class Log extends SyncModule {
   }
 
   protected write(err: Error | string, message: string | any[], level: LogLevel, ...args: any[]) {
-    this.Targets.forEach(t => t.instance.write(createLogMessageObject(err, message, level, this.Name, ...args)));
+    const lMsg = createLogMessageObject(err, message, level, this.Name, this.Variables, ...args);
+    this.Targets.forEach(t => t.instance.write(lMsg));
   }
 
   public trace(message: string, ...args: any[]): void;
@@ -155,7 +156,7 @@ export class Log extends SyncModule {
   public success(message: string, ...args: any[]): void;
   public success(err: Error, message: string, ...args: any[]): void;
   public success(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Security, ...args);
+    this.write(err, message, LogLevel.Success, ...args);
   }
 
   /**
@@ -171,7 +172,7 @@ export class Log extends SyncModule {
 
   static write(err: Error | string, message: string | any[], level: LogLevel, name: string, ...args: any[]) {
 
-    const msg = createLogMessageObject(err, message, level, name, ...args);
+    const msg = createLogMessageObject(err, message, level, name, {}, ...args);
 
     // if we have already created logger write to it
     if (Log.Loggers.has(name)) {

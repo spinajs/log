@@ -6,6 +6,8 @@ import sinon from 'sinon';
 import { Log, LogLevel } from '../src';
 import { expect } from 'chai';
 import _ from 'lodash';
+import { TestTarget } from "./targets/TestTarget";
+import { DateTime } from "luxon";
 
 import { join, normalize, resolve } from 'path';
 function dir(path: string) {
@@ -25,21 +27,26 @@ class TestConfiguration extends FrameworkConfiguration {
             },
             logger: {
                 targets: [{
-                    layout: "",
                     name: "Empty",
                     type: "BlackHoleTarget"
-                }],
+                },
+                {
+                    name: "Format",
+                    type: "TestTarget",
+                },
+                ],
 
                 rules: [
                     { name: "*", level: "trace", target: "Empty" },
+                    { name: "test-format", level: "trace", target: "Format" }
                 ],
             }
         })
     }
 }
 
-function logger() {
-    return  DI.resolve(Log, ["TestLogger"]);
+function logger(name?: string) {
+    return DI.resolve(Log, [name ?? "TestLogger"]);
 }
 
 describe("logger tests", function () {
@@ -57,7 +64,7 @@ describe("logger tests", function () {
         sinon.restore();
     });
 
-    it("Should create simple console logger", async () => {
+    it("Should create logger", async () => {
 
         const log = logger();
 
@@ -65,18 +72,60 @@ describe("logger tests", function () {
         expect(log.Name).to.eq("TestLogger");
     })
 
-    it("Should log trace", async () => {
+    it("Should log proper levels", async () => {
         const log = await logger();
         const spy = sinon.spy(BlackHoleTarget.prototype, "write");
 
         log.trace("Hello world");
+        log.debug("Hello world");
+        log.info("Hello world");
+        log.success("Hello world");
+        log.warn("Hello world");
+        log.error("Hello world");
+        log.fatal("Hello world");
+        log.security("Hello world");
 
-        expect(spy.args[0]).to.include({
-            Level: LogLevel.Trace
-        });
+        expect(spy.args[0][0]).to.have.property("Level", LogLevel.Trace);
+        expect(spy.args[1][0]).to.have.property("Level", LogLevel.Debug);
+        expect(spy.args[2][0]).to.have.property("Level", LogLevel.Info);
+        expect(spy.args[3][0]).to.have.property("Level", LogLevel.Success);
+        expect(spy.args[4][0]).to.have.property("Level", LogLevel.Warn);
+        expect(spy.args[5][0]).to.have.property("Level", LogLevel.Error);
+        expect(spy.args[6][0]).to.have.property("Level", LogLevel.Fatal);
+        expect(spy.args[7][0]).to.have.property("Level", LogLevel.Security);
     })
 
-    it("Should log with specified file layout", async () => {
+    it("Should log with default layout", async () => {
+
+        const log = await logger("test-format");
+        const spy = sinon.spy(TestTarget.prototype, "sink");
+
+        log.trace("Hello world");
+        log.debug("Hello world");
+        log.info("Hello world");
+        log.success("Hello world");
+        log.warn("Hello world");
+        log.error("Hello world");
+        log.fatal("Hello world");
+        log.security("Hello world");
+
+        const now =  DateTime.now();
+
+        expect(spy.args[0][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("TRACE Hello world (test-format)"));
+        expect(spy.args[1][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("DEBUG Hello world (test-format)"));
+        expect(spy.args[2][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("INFO Hello world (test-format)"));
+        expect(spy.args[3][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("SUCCESS Hello world (test-format)"));
+        expect(spy.args[4][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("WARN Hello world (test-format)"));
+        expect(spy.args[5][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("ERROR Hello world (test-format)"));
+        expect(spy.args[6][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("FATAL Hello world (test-format)"));
+        expect(spy.args[7][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("SECURITY Hello world (test-format)"));
+    })
+
+    it("Should not create new logger with same name", async () => {
+
+    })
+
+    it("Should log to multiple targets", async () => {
 
     })
 
@@ -84,19 +133,11 @@ describe("logger tests", function () {
 
     })
 
+    it("Custom variables should be avaible", async () => {
+
+    })
+
     it("Should write log only with specified level", async () => {
-
-    })
-
-    it("Should resolve logger with name", async () => {
-
-    })
-
-    it("Should write to specific target", async () => {
-
-    });
-
-    it("Should use custom variables", async () => {
 
     })
 
@@ -105,10 +146,6 @@ describe("logger tests", function () {
     })
 
     it("Should write exception message along with user message", async () => {
-
-    })
-
-    it("Should write to custom target", async () => {
 
     })
 });

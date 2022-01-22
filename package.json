@@ -29,8 +29,6 @@
     "@spinajs/di": "^1.0.19",
     "@spinajs/exceptions": "^1.0.3",
     "@spinajs/validation": "^1.0.0",
-    "bunyan": "^1.8.12",
-    "chalk": "^3.0.0",
     "colors": "^1.4.0",
     "glob": "^7.2.0",
     "glob-to-regexp": "^0.4.1",

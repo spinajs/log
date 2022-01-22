@@ -173,18 +173,19 @@ export class Log extends SyncModule {
   static write(err: Error | string, message: string | any[], level: LogLevel, name: string, ...args: any[]) {
 
     const msg = createLogMessageObject(err, message, level, name, {}, ...args);
+    const logName = arguments.length  >= 4 ? name : message as string;
 
     // if we have already created logger write to it
-    if (Log.Loggers.has(name)) {
-      Log.Loggers.get(name).Targets.forEach(t => t.instance.write(msg));
+    if (Log.Loggers.has(logName)) {
+      Log.Loggers.get(logName).Targets.forEach(t => t.instance.write(msg));
       return;
     }
 
     // otherwise store in buffer
-    if (Log.LogBuffer.has(name)) {
-      Log.LogBuffer.get(name).push(msg)
+    if (Log.LogBuffer.has(logName)) {
+      Log.LogBuffer.get(logName).push(msg)
     } else {
-      Log.LogBuffer.set(name, [msg])
+      Log.LogBuffer.set(logName, [msg])
     }
   }
 

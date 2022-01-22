@@ -1,7 +1,7 @@
 import { Config } from "@spinajs/configuration";
-import { Autoinject, DI, IContainer, NewInstance, SyncModule } from "@spinajs/di";
+import { Autoinject, DI, IContainer, NewInstance, ResolveException, SyncModule } from "@spinajs/di";
 import { LogTarget } from "./targets/LogTarget";
-import { CommonTargetOptions, LogLevel, LogLevelStrings, LogOptions, LogRule, LogTargetData, TargetsOption } from "./types";
+import { CommonTargetOptions, LogLevel, LogLevelStrings, LogOptions, LogRule, LogTargetData, StrToLogLevel, TargetsOption } from "./types";
 import * as util from "util";
 import globToRegexp from "glob-to-regexp";
 import { DataValidator } from "@spinajs/validation";
@@ -26,9 +26,11 @@ function createLogMessageObject(err: Error | string, message: string | any[], le
 }
 
 
+
 interface LogTargetDesc {
   instance: LogTarget<CommonTargetOptions>;
   options?: TargetsOption;
+  rule: LogRule;
 }
 
 /**
@@ -94,7 +96,8 @@ export class Log extends SyncModule {
 
       return {
         instance: DI.resolve<LogTarget<CommonTargetOptions>>(found.type, [found]),
-        options: found
+        options: found,
+        rule: r
       };
     });
   }
@@ -107,7 +110,11 @@ export class Log extends SyncModule {
 
   protected write(err: Error | string, message: string | any[], level: LogLevel, ...args: any[]) {
     const lMsg = createLogMessageObject(err, message, level, this.Name, this.Variables, ...args);
-    this.Targets.forEach(t => t.instance.write(lMsg));
+    this.Targets.forEach(t => {
+      if (level >= StrToLogLevel[t.rule.level]) {
+        t.instance.write(lMsg);
+      }
+    });
   }
 
   public trace(message: string, ...args: any[]): void;
@@ -173,7 +180,7 @@ export class Log extends SyncModule {
   static write(err: Error | string, message: string | any[], level: LogLevel, name: string, ...args: any[]) {
 
     const msg = createLogMessageObject(err, message, level, name, {}, ...args);
-    const logName = arguments.length  >= 4 ? name : message as string;
+    const logName = arguments.length >= 4 ? name : message as string;
 
     // if we have already created logger write to it
     if (Log.Loggers.has(logName)) {
@@ -245,3 +252,19 @@ export class Log extends SyncModule {
     }, this]);
   }
 }
+
+DI.register(Log).as("__logImplementation__");
+DI.register((container: IContainer, ...args: any[]) => {
+
+  if (!args || args.length === 0 || typeof args[0] !== "string") {
+    throw new ResolveException(`invalid arguments for Log constructor (logger name)`)
+  }
+
+  const logName = args[0];
+
+  if (Log.Loggers.has(logName)) {
+    return Log.Loggers.get(logName);
+  }
+
+  return container.resolve("__logImplementation__", [...args]);
+}).as(Log);

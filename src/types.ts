@@ -16,6 +16,17 @@ export enum LogLevel {
     Trace = 0,
 }
 
+export const StrToLogLevel = {
+    "trace": LogLevel.Trace,
+    "debug": LogLevel.Debug,
+    "info": LogLevel.Info,
+    "success": LogLevel.Success,
+    "warn": LogLevel.Warn,
+    "error": LogLevel.Error,
+    "fatal": LogLevel.Fatal,
+    "security": LogLevel.Security
+}
+
 export const LogLevelStrings = {
     [LogLevel.Debug]: "debug",
     [LogLevel.Error]: "error",

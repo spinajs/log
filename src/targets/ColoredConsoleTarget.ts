@@ -1,11 +1,10 @@
-import { ColoredConsoleTargetOptions, LogLevelStrings, LogTargetData, LogVariable } from './../types';
-import { IContainer, Inject, Injectable, Singleton } from '@spinajs/di';
+import { ColoredConsoleTargetOptions, LogLevelStrings, LogTargetData } from './../types';
+import { IContainer, Injectable, Singleton } from '@spinajs/di';
 import { LogTarget } from './LogTarget';
 import { LogLevel } from '..';
 
 const colors = require('colors/safe');
 
-@Inject(Array.ofType(LogVariable))
 @Singleton()
 @Injectable("ConsoleTarget")
 export class ColoredConsoleTarget extends LogTarget<ColoredConsoleTargetOptions> {

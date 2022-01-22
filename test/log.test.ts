@@ -1,3 +1,4 @@
+import { TestLevel } from './targets/TestLevel';
 import { BlackHoleTarget } from './../src/targets/BlackHoleTarget';
 import 'mocha';
 import { DI, IContainer } from '@spinajs/di';
@@ -34,11 +35,16 @@ class TestConfiguration extends FrameworkConfiguration {
                     name: "Format",
                     type: "TestTarget",
                 },
+                {
+                    name: "Level",
+                    type: "TestLevel",
+                },
                 ],
 
                 rules: [
                     { name: "*", level: "trace", target: "Empty" },
-                    { name: "test-format", level: "trace", target: "Format" }
+                    { name: "test-format", level: "trace", target: "Format" },
+                    { name: "test-level", level: "warn", target: "Level" }
                 ],
             }
         })
@@ -109,7 +115,7 @@ describe("logger tests", function () {
         log.fatal("Hello world");
         log.security("Hello world");
 
-        const now =  DateTime.now();
+        const now = DateTime.now();
 
         expect(spy.args[0][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("TRACE Hello world (test-format)"));
         expect(spy.args[1][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("DEBUG Hello world (test-format)"));
@@ -123,9 +129,21 @@ describe("logger tests", function () {
 
     it("Should not create new logger with same name", async () => {
 
+        const log = await logger("test-format");
+        const log2 = await logger("test-format");
+
+        expect(log).to.be.eq(log2);
     })
 
     it("Should log to multiple targets", async () => {
+
+    })
+
+    it("Should not log from other sources", async () =>{ 
+
+    })
+
+    it("Should log from  sources by wildcard", async () =>{ 
 
     })
 
@@ -134,11 +152,17 @@ describe("logger tests", function () {
     })
 
     it("Custom variables should be avaible", async () => {
-
+        
     })
 
     it("Should write log only with specified level", async () => {
+        const log = await logger("test-level");
+        const spy = sinon.spy(TestLevel.prototype, "write");
 
+        log.trace("Hello world");
+        expect(spy.callCount).to.eq(0);
+        log.warn("Hello world");
+        expect(spy.calledOnce).to.be.true;
     })
 
     it("should support creating logger programatically", async () => {

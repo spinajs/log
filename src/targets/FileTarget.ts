@@ -1,6 +1,6 @@
-import { IContainer, Inject, Injectable, NewInstance } from "@spinajs/di";
+import { IContainer, Injectable, NewInstance } from "@spinajs/di";
 import { LogTarget } from "./LogTarget";
-import { FileTargetOptions, LogTargetData, LogVariable } from "../types";
+import { FileTargetOptions, LogTargetData } from "../types";
 import fs from "fs";
 import path from "path";
 import { Job, scheduleJob } from "node-schedule";
@@ -11,7 +11,6 @@ import * as zlib from "zlib";
 
 @Injectable("FileTarget")
 @NewInstance()
-@Inject(Array.ofType(LogVariable))
 export class FileTarget extends LogTarget<FileTargetOptions>
 {
 

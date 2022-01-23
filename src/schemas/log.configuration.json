@@ -17,8 +17,8 @@
                     "name": {
                         "type": "string"
                     },
-                    "type" : { 
-                        "type" : "string"
+                    "type": {
+                        "type": "string"
                     },
                     "theme": {
                         "type": "object",
@@ -77,7 +77,10 @@
                         "minimum": 1000
                     }
                 },
-                "required": ["name", "type"]
+                "required": [
+                    "name",
+                    "type"
+                ]
             }
         },
         "rules": {
@@ -105,7 +108,17 @@
                         ]
                     },
                     "target": {
-                        "type": "string"
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        ]
                     }
                 },
                 "required": [

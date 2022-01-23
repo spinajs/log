@@ -46,7 +46,7 @@ export abstract class LogVariable {
 export interface LogRule {
     name: string;
     level: "trace" | "debug" | "info" | "warn" | "error" | "fatal" | "security" | "success";
-    target: string;
+    target: string | string[];
 }
 
 export interface TargetsOption {

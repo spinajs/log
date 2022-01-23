@@ -27,7 +27,7 @@ export abstract class LogTarget<T extends CommonTargetOptions> extends SyncModul
         if (options) {
             this.Options = _.merge(_.merge(this.Options, {
                 enabled: true,
-                layout: "{datetime} {level} {message} ({logger})"
+                layout: "{datetime} {level} {message} {error} ({logger})"
             }), options);
         }
     }
@@ -35,34 +35,49 @@ export abstract class LogTarget<T extends CommonTargetOptions> extends SyncModul
     public abstract write(data: LogTargetData): Promise<void>;
 
     protected format(customVars: {}, layout: string): string {
+        
+        const self = this;
 
-        this.LayoutRegexp.lastIndex = 0;
-
-        const varMatch = [...layout.matchAll(this.LayoutRegexp)];
-        if (!varMatch) {
-            return "";
+        if ((customVars as any).message) {
+            return _format({
+                ...customVars,
+                message: _format(customVars, (customVars as any).message)
+            }, layout)
         }
 
-        let result = layout;
+        return _format(customVars, layout);
 
-        varMatch.forEach(v => {
+        function _format(vars: {}, txt: string) {
+            self.LayoutRegexp.lastIndex = 0;
 
-            if ((customVars as any)[v[2]]) {
-                result = result.replace(v[0], (customVars as any)[v[2]]);
-            } else {
+            const varMatch = [...txt.matchAll(self.LayoutRegexp)];
+            if (!varMatch) {
+                return "";
+            }
 
-                const variable = this.VariablesDictionary.get(v[2]);
-                if (variable) {
-                    // optional parameter eg. {env:PORT}
-                    if (v[3]) {
-                        result = result.replace(v[0], variable.Value(v[4]));
-                    } else {
-                        result = result.replace(v[0], variable.Value());
+            let result = txt;
+
+            varMatch.forEach(v => {
+
+                if ((vars as any)[v[2]]) {
+                    result = result.replace(v[0], (vars as any)[v[2]]);
+                } else {
+
+                    const variable = self.VariablesDictionary.get(v[2]);
+                    if (variable) {
+                        // optional parameter eg. {env:PORT}
+                        if (v[3]) {
+                            result = result.replace(v[0], variable.Value(v[4]));
+                        } else {
+                            result = result.replace(v[0], variable.Value());
+                        }
+                    }else{ 
+                        result = result.replace(v[0], "");
                     }
                 }
-            }
-        })
+            })
 
-        return result;
+            return result;
+        }
     }
 }

@@ -4,7 +4,7 @@ import 'mocha';
 import { DI, IContainer } from '@spinajs/di';
 import { Configuration, FrameworkConfiguration } from "@spinajs/configuration";
 import sinon from 'sinon';
-import { Log, LogLevel } from '../src';
+import { Log, LogLevel, LogVariable } from '../src';
 import { expect } from 'chai';
 import _ from 'lodash';
 import { TestTarget } from "./targets/TestTarget";
@@ -13,6 +13,16 @@ import { DateTime } from "luxon";
 import { join, normalize, resolve } from 'path';
 function dir(path: string) {
     return resolve(normalize(join(__dirname, path)));
+}
+
+class CustomVariable extends LogVariable {
+    public get Name(): string {
+        return "custom-var"
+    }
+    public Value(_option?: string): string {
+        return "hello-custom-var";
+    }
+
 }
 
 class TestConfiguration extends FrameworkConfiguration {
@@ -39,12 +49,20 @@ class TestConfiguration extends FrameworkConfiguration {
                     name: "Level",
                     type: "TestLevel",
                 },
+                {
+                    name: "CustomLayout",
+                    type: "TestTarget",
+                    layout: "{date:dd-MM-yyyy} {time:HH:mm} {message} {custom-var}"
+                }
                 ],
 
                 rules: [
                     { name: "*", level: "trace", target: "Empty" },
                     { name: "test-format", level: "trace", target: "Format" },
-                    { name: "test-level", level: "warn", target: "Level" }
+                    { name: "test-level", level: "warn", target: "Level" },
+                    { name: "test-layout", level: "info", target: "CustomLayout" },
+                    { name: "multiple-targets", level: "info", target: ["Format", "Level"]}
+
                 ],
             }
         })
@@ -64,6 +82,10 @@ describe("logger tests", function () {
         DI.clearCache();
         DI.register(TestConfiguration).as(Configuration);
         DI.resolve(Configuration);
+    });
+
+    beforeEach(() => {
+        Log.Loggers.clear();
     });
 
     afterEach(() => {
@@ -117,14 +139,14 @@ describe("logger tests", function () {
 
         const now = DateTime.now();
 
-        expect(spy.args[0][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("TRACE Hello world (test-format)"));
-        expect(spy.args[1][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("DEBUG Hello world (test-format)"));
-        expect(spy.args[2][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("INFO Hello world (test-format)"));
-        expect(spy.args[3][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("SUCCESS Hello world (test-format)"));
-        expect(spy.args[4][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("WARN Hello world (test-format)"));
-        expect(spy.args[5][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("ERROR Hello world (test-format)"));
-        expect(spy.args[6][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("FATAL Hello world (test-format)"));
-        expect(spy.args[7][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("SECURITY Hello world (test-format)"));
+        expect(spy.args[0][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("TRACE Hello world  (test-format)"));
+        expect(spy.args[1][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("DEBUG Hello world  (test-format)"));
+        expect(spy.args[2][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("INFO Hello world  (test-format)"));
+        expect(spy.args[3][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("SUCCESS Hello world  (test-format)"));
+        expect(spy.args[4][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("WARN Hello world  (test-format)"));
+        expect(spy.args[5][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("ERROR Hello world  (test-format)"));
+        expect(spy.args[6][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("FATAL Hello world  (test-format)"));
+        expect(spy.args[7][0]).to.be.a('string').and.satisfy((msg: string) => msg.startsWith(now.toFormat("dd/MM/yyyy")) && msg.endsWith("SECURITY Hello world  (test-format)"));
     })
 
     it("Should not create new logger with same name", async () => {
@@ -136,23 +158,63 @@ describe("logger tests", function () {
     })
 
     it("Should log to multiple targets", async () => {
+        const spy = sinon.spy(TestTarget.prototype, "sink");
+        const spy2 = sinon.spy(TestLevel.prototype, "sink");
+
+        const log = await logger("multiple-targets");
+
+        log.info("Hello");
+
+        expect(spy.calledOnce).to.be.true;
+        expect(spy2.calledOnce).to.be.true;
+    })
+
+    it("Should log from sources by wildcard", async () => {
 
     })
 
-    it("Should not log from other sources", async () =>{ 
+    it("Check layout variables are avaible", async () => {
+        DI.register(CustomVariable).as(LogVariable);
+        const spy = sinon.spy(TestTarget.prototype, "sink");
+        const log = await logger("test-layout");
+        const date = DateTime.now();
+
+        log.info("Hello");
+
+        expect(spy.args[0][0]).to.be.a("string").and.satisfy((msg: string) => msg.includes(`${date.toFormat("dd-MM-yyyy")} ${date.toFormat("HH:mm")} Hello hello-custom-var`));
 
     })
 
-    it("Should log from  sources by wildcard", async () =>{ 
+    it("Should log variable with options", async () => {
+        const spy = sinon.spy(TestTarget.prototype, "sink");
+        const log = await logger("test-format");
+        const date = DateTime.now();
+
+        log.info("Hello {date:HH:mm}");
+
+        expect(spy.args[0][0]).to.be.a("string").and.satisfy((msg: string) => msg.includes(`Hello ${date.toFormat("HH:mm")}`));
 
     })
 
-    it("Check default layout variables are avaible", async () => {
+    it("Should format log func arguments", async () => { 
+        const spy = sinon.spy(TestTarget.prototype, "sink");
+        const log = await logger("test-format");
 
+        log.info("%s %d", "Hello", 666);
+
+        expect(spy.args[0][0]).to.be.a("string").and.satisfy((msg: string) => msg.includes("Hello 666"));
     })
+ 
+    it("Custom variables should be avaible in message", async () => {
 
-    it("Custom variables should be avaible", async () => {
-        
+        DI.register(CustomVariable).as(LogVariable);
+        const spy = sinon.spy(TestTarget.prototype, "sink");
+        const log = await logger("test-format");
+
+        log.info("{custom-var}");
+
+        expect(spy.args[0][0]).to.be.a("string").and.satisfy((msg: string) => msg.includes("hello-custom-var"));
+
     })
 
     it("Should write log only with specified level", async () => {
@@ -170,6 +232,13 @@ describe("logger tests", function () {
     })
 
     it("Should write exception message along with user message", async () => {
+        const err = new Error("error message");
+        const spy = sinon.spy(TestTarget.prototype, "sink");
+        const log = await logger("test-format");
+       
+        log.error(err, "hello world err");
+
+        expect(spy.args[0][0]).to.be.a("string").and.satisfy((msg: string) => msg.includes("ERROR hello world err Error: error message"));
 
     })
 });

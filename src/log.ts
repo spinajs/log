@@ -11,7 +11,7 @@ import { InvalidOption } from "@spinajs/exceptions";
 function createLogMessageObject(err: Error | string, message: string | any[], level: LogLevel, logger: string, variables: any, ...args: any[]): LogTargetData {
 
   const sMsg = (err instanceof Error) ? message as string : err;
-  const tMsg = args.length !== 0 ? util.format(sMsg, args) : sMsg;
+  const tMsg = args.length !== 0 ? util.format(sMsg, ...args) : sMsg;
 
   return {
     Level: level,
@@ -25,6 +25,24 @@ function createLogMessageObject(err: Error | string, message: string | any[], le
   }
 }
 
+function wrapWrite(level: LogLevel) {
+
+  const self = this;
+
+  return (err: Error | string, message: string | any[], ...args: any[]): void => {
+
+    if (err instanceof Error) {
+      self.write(err, message, level, ...args);
+    } else {
+
+      if (message) {
+        self.write(err, null, level, ...[message, ...args]);
+      } else {
+        self.write(err, null, level, ...args);
+      }
+    }
+  }
+}
 
 
 interface LogTargetDesc {
@@ -64,11 +82,11 @@ export class Log extends SyncModule {
     this.resolveLogTargets();
 
     process.on("uncaughtException", (err) => {
-      this.fatal(err, "Unhandled exception occured");
+      Log.fatal(err, "Unhandled exception occured", "default");
     });
 
     process.on("unhandledRejection", (reason, p) => {
-      this.fatal(reason as any, "Unhandled rejection at Promise %s", p);
+      Log.fatal(reason as any, "Unhandled rejection at Promise %s", "default", p);
     });
 
     this.writeBufferedMessages();
@@ -88,18 +106,22 @@ export class Log extends SyncModule {
 
   protected resolveLogTargets() {
     this.Targets = this.Rules.map(r => {
-      const found = this.Options.targets.find(t => t.name === r.target);
+      const found = this.Options.targets.filter(t => {
+        return Array.isArray(r.target) ? r.target.includes(t.name) : r.target === t.name;
+      });
 
       if (!found) {
         throw new InvalidOption(`No target matching rule ${r.target}`);
       }
 
-      return {
-        instance: DI.resolve<LogTarget<CommonTargetOptions>>(found.type, [found]),
-        options: found,
-        rule: r
-      };
-    });
+      return found.map(f => {
+        return {
+          instance: DI.resolve<LogTarget<CommonTargetOptions>>(f.type, [f]),
+          options: f,
+          rule: r
+        };
+      });
+    }).reduce((prev: LogTargetDesc[], curr: LogTargetDesc[]) => { return prev.concat(...curr) }, []);
   }
 
   protected matchRulesToLogger() {
@@ -120,50 +142,51 @@ export class Log extends SyncModule {
   public trace(message: string, ...args: any[]): void;
   public trace(err: Error, message: string, ...args: any[]): void;
   public trace(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Trace, ...args);
+    wrapWrite.apply(this, [LogLevel.Trace])(err, message, ...args);
   }
 
 
   public debug(message: string, ...args: any[]): void;
   public debug(err: Error, message: string, ...args: any[]): void;
   public debug(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Debug, ...args);
+    wrapWrite.apply(this, [LogLevel.Debug])(err, message, ...args);
   }
 
   public info(message: string, ...args: any[]): void;
   public info(err: Error, message: string, ...args: any[]): void;
   public info(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Info, ...args);
+    wrapWrite.apply(this, [LogLevel.Info])(err, message, ...args);
   }
 
   public warn(message: string, ...args: any[]): void;
   public warn(err: Error, message: string, ...args: any[]): void;
   public warn(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Warn, ...args);
+    wrapWrite.apply(this, [LogLevel.Warn])(err, message, ...args);
+
   }
 
   public error(message: string, ...args: any[]): void;
   public error(err: Error, message: string, ...args: any[]): void;
   public error(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Error, ...args);
+    wrapWrite.apply(this, [LogLevel.Error])(err, message, ...args);
   }
 
   public fatal(message: string, ...args: any[]): void;
   public fatal(err: Error, message: string, ...args: any[]): void;
   public fatal(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Fatal, ...args);
+    wrapWrite.apply(this, [LogLevel.Fatal])(err, message, ...args);
   }
 
   public security(message: string, ...args: any[]): void;
   public security(err: Error, message: string, ...args: any[]): void;
   public security(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Security, ...args);
+    wrapWrite.apply(this, [LogLevel.Security])(err, message, ...args);
   }
 
   public success(message: string, ...args: any[]): void;
   public success(err: Error, message: string, ...args: any[]): void;
   public success(err: Error | string, message: string | any[], ...args: any[]): void {
-    this.write(err, message, LogLevel.Success, ...args);
+    wrapWrite.apply(this, [LogLevel.Success])(err, message, ...args);
   }
 
   /**

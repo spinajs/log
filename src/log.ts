@@ -57,6 +57,8 @@ interface LogTargetDesc {
 @NewInstance()
 export class Log extends SyncModule {
 
+  static AttachedToExitEvents = false;
+
   @Config("logger")
   protected Options: LogOptions;
 
@@ -81,13 +83,19 @@ export class Log extends SyncModule {
     this.matchRulesToLogger();
     this.resolveLogTargets();
 
-    process.on("uncaughtException", (err) => {
-      Log.fatal(err, "Unhandled exception occured", "default");
-    });
+    if (!Log.AttachedToExitEvents) {
 
-    process.on("unhandledRejection", (reason, p) => {
-      Log.fatal(reason as any, "Unhandled rejection at Promise %s", "default", p);
-    });
+      process.on("uncaughtException", (err) => {
+        Log.fatal(err, "Unhandled exception occured", "process");
+      });
+
+      process.on("unhandledRejection", (reason, p) => {
+        Log.fatal(reason as any, "Unhandled rejection at Promise %s", "process", p);
+      });
+
+      Log.AttachedToExitEvents = true;
+    }
+
 
     this.writeBufferedMessages();
 

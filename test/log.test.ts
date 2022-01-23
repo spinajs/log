@@ -1,3 +1,4 @@
+import { TestWildcard } from './targets/TestWildcard';
 import { TestLevel } from './targets/TestLevel';
 import { BlackHoleTarget } from './../src/targets/BlackHoleTarget';
 import 'mocha';
@@ -53,7 +54,11 @@ class TestConfiguration extends FrameworkConfiguration {
                     name: "CustomLayout",
                     type: "TestTarget",
                     layout: "{date:dd-MM-yyyy} {time:HH:mm} {message} {custom-var}"
-                }
+                },
+                {
+                    name: "TestWildcard",
+                    type: "TestWildcard",
+                },
                 ],
 
                 rules: [
@@ -61,6 +66,7 @@ class TestConfiguration extends FrameworkConfiguration {
                     { name: "test-format", level: "trace", target: "Format" },
                     { name: "test-level", level: "warn", target: "Level" },
                     { name: "test-layout", level: "info", target: "CustomLayout" },
+                    { name: "http/*/controller", level: "info", target: "TestWildcard" },
                     { name: "multiple-targets", level: "info", target: ["Format", "Level"]}
 
                 ],
@@ -171,6 +177,21 @@ describe("logger tests", function () {
 
     it("Should log from sources by wildcard", async () => {
 
+        const spy = sinon.spy(TestWildcard.prototype, "sink");
+
+        const log = await logger("multiple-targets");
+        const log2 = await logger("http/post/controller");
+        const log3 = await logger("http/get/controller");
+
+        log.info("hello");
+        log2.info("world");
+        log3.info("from");
+
+        expect(spy.calledTwice).to.be.true;
+
+        expect(spy.args[0][0]).to.be.a('string').and.satisfy((msg: string) => msg.includes("world"));
+        expect(spy.args[1][0]).to.be.a('string').and.satisfy((msg: string) => msg.includes("from"));
+
     })
 
     it("Check layout variables are avaible", async () => {
@@ -225,10 +246,6 @@ describe("logger tests", function () {
         expect(spy.callCount).to.eq(0);
         log.warn("Hello world");
         expect(spy.calledOnce).to.be.true;
-    })
-
-    it("should support creating logger programatically", async () => {
-
     })
 
     it("Should write exception message along with user message", async () => {

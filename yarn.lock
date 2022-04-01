@@ -151,7 +151,7 @@
     glob "^7.1.4"
     lodash "^4.17.14"
 
-"@spinajs/di@^1.0.19", "@spinajs/di@^1.1.0":
+"@spinajs/di@^1.0.19":
   version "1.0.19"
   resolved "https://registry.yarnpkg.com/@spinajs/di/-/di-1.0.19.tgz#59aeb6340a1c844f2bd903329e5875a825cc046e"
   integrity sha512-L/ed4PLgjgby+wh35a/wotSOtMA7onP/DUiLGWlafKe+NBOEJdGa5DbTd9FtFJnxb0j2RQnzZBghgZG4TmH5Qw==
@@ -160,10 +160,26 @@
     lodash "^4.17.14"
     reflect-metadata "^0.1.13"
 
+"@spinajs/di@^1.1.0":
+  version "1.2.68"
+  resolved "https://registry.yarnpkg.com/@spinajs/di/-/di-1.2.68.tgz#3f643aaf4587d42839ddf0887d3a7ce1fd6bfb27"
+  integrity sha512-vMf5AA1cl3y5X8zcPtOOcBm/4clOb/JqVqOoiJjWN7Zk5ggan957sJ3f1KIjwmyz5h4bFRTzRn0xyEku7CqPOg==
+  dependencies:
+    "@spinajs/exceptions" "^1.2.7"
+    lodash "^4.17.21"
+    reflect-metadata "^0.1.13"
+
 "@spinajs/exceptions@^1.0.3", "@spinajs/exceptions@^1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@spinajs/exceptions/-/exceptions-1.0.4.tgz#34959600eba77c25fec2506f1ac2c12f8bd0ba9f"
   integrity sha512-zcfPTTYOvLN2eMerhCTviPnQOyhRbFqaSSZzZpKHc60UO2nq7/JPyzmvWsV8M305CQHYgM2yoFSYN5HuZU9nOA==
+
+"@spinajs/exceptions@^1.2.7":
+  version "1.2.7"
+  resolved "https://registry.yarnpkg.com/@spinajs/exceptions/-/exceptions-1.2.7.tgz#1ecd3add2ce103d53b7828214a1303b227ae0e63"
+  integrity sha512-U90WaATzBTOnIQEhixAjwSzwLePE6rgqOayd9ggeoGHBCauKN8reksYr4dOHSby1sxifIbMqd9vtYpSDIjw+QQ==
+  dependencies:
+    lodash "^4.17.21"
 
 "@spinajs/log@^1.0.10":
   version "1.0.10"
@@ -1340,7 +1356,7 @@ lodash.get@^4.4.2:
   resolved "https://registry.yarnpkg.com/lodash.get/-/lodash.get-4.4.2.tgz#2d177f652fa31e939b4438d5341499dfa3825e99"
   integrity sha1-LRd/ZS+jHpObRDjVNBSZ36OCXpk=
 
-lodash@^4.17.10, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.4:
+lodash@^4.17.10, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.21, lodash@^4.17.4:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
@@ -1408,9 +1424,9 @@ merge-source-map@^1.1.0:
     brace-expansion "^1.1.7"
 
 minimist@^1.2.0, minimist@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.5.tgz#67d66014b66a6a8aaa0c083c5fd58df4e4e97602"
-  integrity sha512-FM9nNUYrRBAELZQT3xeZQ7fmMOBg6nWNmJKTcgsJeaLstP/UODVpGsr5OhXhhXg6f+qtJ8uiZ+PUxkDWcgIXLw==
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
+  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
 
 mkdirp@0.5.4:
   version "0.5.4"
